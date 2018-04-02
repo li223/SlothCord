@@ -400,9 +400,9 @@ namespace SlothCord
     }
     public sealed class DiscordChannel : ChannelMethods
     {
-        public async Task SendMessageAsync(string message = null, bool is_tts = false, DiscordEmbed embed = null) => await base.CreateMessageAsync(this.Id, message, is_tts, embed);
+        public async Task<DiscordMessage> SendMessageAsync(string message = null, bool is_tts = false, DiscordEmbed embed = null) => await base.CreateMessageAsync(this.Id, message, is_tts, embed);
 
-        public async Task SendMessageAsync(DiscordMessage msg) => await base.CreateMessageAsync(this.Id, msg?.Content, msg.IsTTS, msg.Embeds.FirstOrDefault());
+        public async Task<DiscordMessage> SendMessageAsync(DiscordMessage msg) => await base.CreateMessageAsync(this.Id, msg?.Content, msg.IsTTS, msg.Embeds.FirstOrDefault());
 
         public async Task<DiscordMessage> GetMessageAsync(ulong id) => await base.GetSingleMessageAsync(this.Id, id);
 
