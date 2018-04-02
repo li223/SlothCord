@@ -329,7 +329,7 @@ namespace SlothCord
 
         internal async Task<DiscordMessage> CreateMessageAsync(ulong channel_id, string message = null, bool is_tts = false, DiscordEmbed embed = null)
         {
-            if (message.Length > 2000)
+            if (message?.Length > 2000)
                 throw new ArgumentException("Message cannot exceed 2000 characters");
             if (string.IsNullOrEmpty(message) && embed == null)
                 throw new Exception("Cannot send an empty message");
