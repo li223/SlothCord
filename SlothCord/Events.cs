@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace SlothCord
 {
+    public delegate void OnCommandError(object sender, string Message);
     public delegate void OnGuildsDownloaded(object sender, IEnumerable<DiscordGuild> e);
     public delegate void OnMessageCreate(object sender, DiscordMessage e);
     public delegate void OnGuildAvailable(object sender, DiscordGuild e);

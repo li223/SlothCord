@@ -1,11 +1,14 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SlothCord.Commands;
 using SuperSocket.ClientEngine;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using WebSocket4Net;
 
@@ -13,6 +16,7 @@ namespace SlothCord
 {
     public class DiscordClient : ApiBase
     {
+        public event OnCommandError CommandErrored;
         public event OnMessageCreate MessageCreated;
         public event OnPresenceUpdate PresenceUpdated;
         public event OnGuildsDownloaded GuildsDownloaded;
@@ -23,6 +27,7 @@ namespace SlothCord
         public event OnReady ClientReady;
         public event OnClientError ClientErrored;
         public event OnSocketDataReceived SocketErrored;
+        public CommandService Commands { get; internal set; } = new CommandService();
 
         private int _sequence = 0;
         private int _guildsToDownload = 0;
@@ -31,6 +36,7 @@ namespace SlothCord
         private int _heartbeatInterval = 0;
 
         internal List<DiscordGuild> AvailableGuilds = new List<DiscordGuild>();
+        internal List<DiscordUser> CachedUsers = new List<DiscordUser>();
 
         /// <summary>
         /// Your bot token
@@ -158,6 +164,7 @@ namespace SlothCord
                                         this.Guilds = AvailableGuilds;
                                         GuildsDownloaded?.Invoke(this, this.Guilds);
                                     }
+                                    CachedUsers.AddRange(guild.Members.Select(x => x.UserData));
                                     break;
                                 }
                             case "PRESENCE_UPDATE":
@@ -179,6 +186,50 @@ namespace SlothCord
                                 {
                                     var msg = JsonConvert.DeserializeObject<DiscordMessage>(data.EventPayload.ToString());
                                     MessageCreated?.Invoke(this, msg);
+                                    if (msg.Content.StartsWith(this.StringPrefix))
+                                    {
+                                        List<object> Args = new List<object>();
+                                        Args.AddRange(msg.Content.Replace(this.StringPrefix, "").Split(' ').ToList());
+                                        var cmd = Commands.UserDefinedCommands.FirstOrDefault(x => x.CommandName == (Args[0] as string));
+                                        if (cmd == null)
+                                        {
+                                            CommandErrored?.Invoke(this, "Command does not exist");
+                                            return;
+                                        }
+                                        var guild = this.Guilds.FirstOrDefault(x => x.Channels.Any(a => a.Id == msg.ChannelId));
+                                        var channel = guild.Channels.First(x => x.Id == msg.ChannelId);
+                                        Args.Remove(Args[0]);
+                                        var passargs = new List<object>();
+                                        if (cmd.Parameters.First().ParameterType == typeof(SlothCommandContext))
+                                        {
+                                            passargs.Add(new SlothCommandContext()
+                                            {
+                                                Channel = channel,
+                                                Guild = guild,
+                                                User = msg.Author
+                                            });
+                                        }
+                                        for (var i = 0; i < Args.Count; i++)
+                                        {
+                                            object currentarg = Args[i];
+                                            if (new Regex(@"(<@(?:!)\d+>)").IsMatch(Args[i] as string))
+                                            {
+                                                var strid = new Regex(@"((<@)(?:!))").Replace(Args[i] as string, "").Replace(">", "");
+                                                var id = ulong.Parse(strid);
+                                                var member = guild.Members.FirstOrDefault(x => x.UserData.Id == id);
+                                                var cachedUser = CachedUsers.FirstOrDefault(x => x.Id == id);
+                                                if (member != null  && currentarg.GetType() == typeof(DiscordMember)) currentarg = member;
+                                                else if (cachedUser != null) currentarg = cachedUser;
+                                            }
+                                            else
+                                            {
+                                                var type = cmd.Parameters[i + 1].ParameterType;
+                                                currentarg = Convert.ChangeType(Args[i], type);
+                                            }
+                                            passargs.Add(currentarg);
+                                        }
+                                        cmd.Method.Invoke(cmd.ClassInstance, passargs.ToArray());
+                                    }
                                     break;
                                 }
                             default:
