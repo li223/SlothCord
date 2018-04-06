@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Text;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace SlothCord.Commands
 {
@@ -33,6 +34,7 @@ namespace SlothCord.Commands
         public DiscordGuild Guild { get; set; }
         public DiscordChannel Channel { get; set; }
         public DiscordUser User { get; set; }
+        public async Task RespondAsync(string text = null, bool is_tts = false, DiscordEmbed embed = null) => await Channel.SendMessageAsync(text, is_tts, embed);
     }
     public class SlothUserCommand
     { 
@@ -50,4 +52,5 @@ namespace SlothCord.Commands
         }
         public string CommandName { get; private set; }
     }
+    public class RemainingStringAttribute : Attribute { }
 }

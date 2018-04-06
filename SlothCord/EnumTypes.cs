@@ -6,6 +6,14 @@ using System.Threading.Tasks;
 
 namespace SlothCord
 {
+    public enum DispatchType
+    {
+        READY = 0,
+        PRESENCE_UPDATE = 1,
+        GUILD_CREATE = 2,
+        MESSAGE_CREATE = 3,
+        TYPING_START = 4
+    }
     public enum StatusType
     {
         Online = 0,

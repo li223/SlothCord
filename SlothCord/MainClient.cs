@@ -16,6 +16,7 @@ namespace SlothCord
 {
     public class DiscordClient : ApiBase
     {
+        public event OnTypingStart TypingStarted;
         public event OnCommandError CommandErrored;
         public event OnMessageCreate MessageCreated;
         public event OnPresenceUpdate PresenceUpdated;
@@ -61,7 +62,12 @@ namespace SlothCord
         /// <summary>
         /// Whether or not to compress the payload
         /// </summary>
-        public bool Compress { get; set; } = false;
+        public bool Compress { get; private set; } = false;
+
+        /// <summary>
+        /// Let the library write to the console
+        /// </summary>
+        public bool LogActions { get; set; } = false;
 
         /// <summary>
         /// How many users have to be in a guild before it's considered large
@@ -79,16 +85,28 @@ namespace SlothCord
         /// <returns></returns>
         public async Task ConnectAsync()
         {
+            if (LogActions)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
+                Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Sending request to GET /gatway/bot");
+                Console.ForegroundColor = ConsoleColor.White;
+            }
             if (string.IsNullOrEmpty(this.Token))
                 throw new ArgumentException("Token cannot be null");
             _httpClient.DefaultRequestHeaders.Add("Authorization", $"{TokenType} {this.Token}");
             this.Token = this.Token;
-            _httpClient.DefaultRequestHeaders.Add("User-Agent", "DiscordBot ($https://fake.com/fake, $1.0.0)");
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", "DiscordBot ($https://github.com/li223/SlothCord, $2.2.5)");
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri($"{_baseAddress}/gateway/bot"));
             var response = await _httpClient.SendAsync(request);
             var content = await response.Content.ReadAsStringAsync();
             if (response.IsSuccessStatusCode)
             {
+                if (LogActions)
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkGreen;
+                    Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Action Success");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
                 var jobj = JsonConvert.DeserializeObject<HttpPayload>(content);
                 WebSocketClient = new WebSocket(jobj.WSUrl);
                 WebSocketClient.MessageReceived += WebSocketClient_MessageReceived;
@@ -98,6 +116,12 @@ namespace SlothCord
             }
             else
             {
+                if (LogActions)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Action errored: {JObject.Parse(content).SelectToken("message")}");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
                 ClientErrored?.Invoke(this, new ClientErroredArgs()
                 {
                     Message = $"Server responded with: {JObject.Parse(content).SelectToken("message")}",
@@ -106,24 +130,50 @@ namespace SlothCord
             }
         }
 
-        private void WebSocketClient_Closed(object sender, EventArgs e) => SocketClosed?.Invoke(this, e);
-
-        private void WebSocketClient_Error(object sender, ErrorEventArgs e) =>
-            SocketErrored?.Invoke(this, new SocketDataArgs()
+        private void WebSocketClient_Closed(object sender, EventArgs e)
+        {
+            if (LogActions)
             {
-                Data = e.Exception.Message
-            });
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Websocket CLOSED");
+                Console.ForegroundColor = ConsoleColor.White;
+            }
+            SocketClosed?.Invoke(this, e);
+        }
+
+        private void WebSocketClient_Error(object sender, ErrorEventArgs e)
+        {
+            if (LogActions)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  WEbsocket ERROR");
+                Console.ForegroundColor = ConsoleColor.White;
+            }
+            SocketErrored?.Invoke(this, e.Exception.Message);
+        }
 
         private async void WebSocketClient_MessageReceived(object sender, MessageReceivedEventArgs e)
         {
-            var data = JsonConvert.DeserializeObject<GatewayPayload>(e.Message);
+            if (LogActions)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
+                Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Socket Message Received");
+                Console.ForegroundColor = ConsoleColor.White;
+            }
+                var data = JsonConvert.DeserializeObject<GatewayPayload>(e.Message);
             if (!string.IsNullOrEmpty(data.Sequence.ToString()))
                 _sequence = (int)data.Sequence;
             switch (data.Code)
             {
                 case OPCode.Hello:
                     {
-                        if (_sessionId == "")
+                        if (LogActions)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Cyan;
+                            Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Gateway HELLO");
+                            Console.ForegroundColor = ConsoleColor.White;
+                        }
+                            if (_sessionId == "")
                         {
                             data.EventPayload = JsonConvert.DeserializeObject<GatewayHello>(data.EventPayload.ToString());
                             _heartbeatInterval = (data.EventPayload as GatewayHello).HeartbeatInterval;
@@ -135,123 +185,219 @@ namespace SlothCord
                     }
                 case OPCode.Dispatch:
                     {
-                        switch (data.EventName)
+                        if (LogActions)
                         {
-                            case "READY":
-                                {
-                                    data.EventPayload = JsonConvert.DeserializeObject<ReadyPayload>(data.EventPayload.ToString());
-                                    _guildsToDownload = (data.EventPayload as ReadyPayload).Guilds.Count;
-                                    var pl = data.EventPayload as ReadyPayload;
-                                    _sessionId = pl.SessionId;
-                                    this.CurrentUser = pl.User;
-                                    ClientReady?.Invoke(this, new OnReadyArgs()
+                            Console.ForegroundColor = ConsoleColor.Cyan;
+                            Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Gateway DISPATCH");
+                        }
+                        var obj = Enum.TryParse(typeof(DispatchType), data.EventName, out var res);
+                        if (obj)
+                        {
+                            switch (Enum.Parse(typeof(DispatchType), data.EventName))
+                            {
+                                case DispatchType.READY:
                                     {
-                                        GatewayVersion = pl.Version,
-                                        SessionId = pl.SessionId
-                                    });
-                                    break;
-                                }
-                            case "GUILD_CREATE":
-                                {
-                                    var guild = JsonConvert.DeserializeObject<DiscordGuild>(data.EventPayload.ToString());
-                                    foreach (var member in guild.Members)
-                                        member.Roles = member.RoleIds.Select(x => guild.Roles.First(a => a.Id == x)) as IReadOnlyList<DiscordRole>;
-                                    AvailableGuilds.Add(guild);
-                                    GuildAvailable?.Invoke(this, guild);
-                                    _downloadedGuilds++;
-                                    if (_guildsToDownload == _downloadedGuilds)
-                                    {
-                                        this.Guilds = AvailableGuilds;
-                                        GuildsDownloaded?.Invoke(this, this.Guilds);
-                                    }
-                                    CachedUsers.AddRange(guild.Members.Select(x => x.UserData));
-                                    break;
-                                }
-                            case "PRESENCE_UPDATE":
-                                {
-                                    var pl = JsonConvert.DeserializeObject<PresencePayload>(data.EventPayload.ToString());
-                                    var guild = this.Guilds.First(x => x.Id == pl.GuildId);
-                                    var member = guild.Members.First(x => x.UserData.Id == pl.User.Id);
-                                    var args = new PresenceUpdateArgs() { MemberBefore = member };
-                                    member.UserData = pl.User;
-                                    member.Nickname = pl.Nickname;
-                                    member.UserData.Status = pl.Status;
-                                    member.Roles = pl.RoleIds.Select(x => guild.Roles.First(a => a.Id == x)) as IReadOnlyList<DiscordRole>;
-                                    member.UserData.Game = pl.Game;
-                                    args.MemberAfter = member;
-                                    PresenceUpdated?.Invoke(this, args);
-                                    break;
-                                }
-                            case "MESSAGE_CREATE":
-                                {
-                                    var msg = JsonConvert.DeserializeObject<DiscordMessage>(data.EventPayload.ToString());
-                                    MessageCreated?.Invoke(this, msg);
-                                    if (msg.Content.StartsWith(this.StringPrefix))
-                                    {
-                                        List<object> Args = new List<object>();
-                                        Args.AddRange(msg.Content.Replace(this.StringPrefix, "").Split(' ').ToList());
-                                        var cmd = Commands.UserDefinedCommands.FirstOrDefault(x => x.CommandName == (Args[0] as string));
-                                        if (cmd == null)
+                                        if (LogActions)
                                         {
-                                            CommandErrored?.Invoke(this, "Command does not exist");
-                                            return;
+                                            Console.ForegroundColor = ConsoleColor.DarkGreen;
+                                            Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Received READY");
+                                            Console.ForegroundColor = ConsoleColor.White;
                                         }
-                                        var guild = this.Guilds.FirstOrDefault(x => x.Channels.Any(a => a.Id == msg.ChannelId));
-                                        var channel = guild.Channels.First(x => x.Id == msg.ChannelId);
-                                        Args.Remove(Args[0]);
-                                        var passargs = new List<object>();
-                                        if (cmd.Parameters.First().ParameterType == typeof(SlothCommandContext))
+                                            data.EventPayload = JsonConvert.DeserializeObject<ReadyPayload>(data.EventPayload.ToString());
+                                        _guildsToDownload = (data.EventPayload as ReadyPayload).Guilds.Count;
+                                        var pl = data.EventPayload as ReadyPayload;
+                                        _sessionId = pl.SessionId;
+                                        this.CurrentUser = pl.User;
+                                        ClientReady?.Invoke(this, new OnReadyArgs()
                                         {
-                                            passargs.Add(new SlothCommandContext()
+                                            GatewayVersion = pl.Version,
+                                            SessionId = pl.SessionId
+                                        });
+                                        break;
+                                    }
+                                case DispatchType.GUILD_CREATE:
+                                    {
+                                        if (LogActions)
+                                        {
+                                            Console.ForegroundColor = ConsoleColor.DarkGreen;
+                                            Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Received GUILD CREATE");
+                                            Console.ForegroundColor = ConsoleColor.White;
+                                        }
+                                        var guild = JsonConvert.DeserializeObject<DiscordGuild>(data.EventPayload.ToString());
+                                        foreach (var member in guild.Members)
+                                            member.Roles = member.RoleIds.Select(x => guild.Roles.First(a => a.Id == x)) as IReadOnlyList<DiscordRole>;
+                                        AvailableGuilds.Add(guild);
+                                        GuildAvailable?.Invoke(this, guild);
+                                        _downloadedGuilds++;
+                                        if (_guildsToDownload == _downloadedGuilds)
+                                        {
+                                            this.Guilds = AvailableGuilds;
+                                            GuildsDownloaded?.Invoke(this, this.Guilds);
+                                        }
+                                        CachedUsers.AddRange(guild.Members.Select(x => x.UserData));
+                                        break;
+                                    }
+                                case DispatchType.PRESENCE_UPDATE:
+                                    {
+                                        if (LogActions)
+                                        {
+                                            Console.ForegroundColor = ConsoleColor.DarkGreen;
+                                            Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Received PRESENCE UPDATE");
+                                            Console.ForegroundColor = ConsoleColor.White;
+                                        }
+                                        var pl = JsonConvert.DeserializeObject<PresencePayload>(data.EventPayload.ToString());
+                                        var guild = this.Guilds.First(x => x.Id == pl.GuildId);
+                                        var member = guild.Members.First(x => x.UserData.Id == pl.User.Id);
+                                        var args = new PresenceUpdateArgs() { MemberBefore = member };
+                                        member.UserData = pl.User;
+                                        member.Nickname = pl.Nickname;
+                                        member.UserData.Status = pl.Status;
+                                        member.Roles = pl.RoleIds.Select(x => guild.Roles.First(a => a.Id == x)) as IReadOnlyList<DiscordRole>;
+                                        member.UserData.Game = pl.Game;
+                                        args.MemberAfter = member;
+                                        PresenceUpdated?.Invoke(this, args);
+                                        break;
+                                    }
+                                case DispatchType.MESSAGE_CREATE:
+                                    {
+                                        if (LogActions)
+                                        {
+                                            Console.ForegroundColor = ConsoleColor.DarkGreen;
+                                            Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Received MESSAGE CREATE");
+                                            Console.ForegroundColor = ConsoleColor.White;
+                                        }
+                                        var msg = JsonConvert.DeserializeObject<DiscordMessage>(data.EventPayload.ToString());
+                                        MessageCreated?.Invoke(this, msg);
+                                        if (msg.Content.StartsWith(this.StringPrefix))
+                                        {
+                                            List<object> Args = new List<object>();
+                                            Args.AddRange(msg.Content.Replace(this.StringPrefix, "").Split(' ').ToList());
+                                            var cmd = Commands.UserDefinedCommands.FirstOrDefault(x => x.CommandName == (Args[0] as string));
+                                            if (cmd == null)
                                             {
-                                                Channel = channel,
-                                                Guild = guild,
-                                                User = msg.Author
+                                                CommandErrored?.Invoke(this, "Command does not exist");
+                                                return;
+                                            }
+                                            var guild = this.Guilds.FirstOrDefault(x => x.Channels.Any(a => a.Id == msg.ChannelId));
+                                            var channel = guild.Channels.First(x => x.Id == msg.ChannelId);
+                                            Args.Remove(Args[0]);
+                                            var passargs = new List<object>();
+                                            if (cmd.Parameters.FirstOrDefault()?.ParameterType == typeof(SlothCommandContext))
+                                            {
+                                                passargs.Add(new SlothCommandContext()
+                                                {
+                                                    Channel = channel,
+                                                    Guild = guild,
+                                                    User = msg.Author
+                                                });
+                                            }
+                                            for (var i = 0; i < Args.Count; i++)
+                                            {
+                                                object currentarg = Args[i];
+                                                if (new Regex(@"(<@(?:!)\d+>)").IsMatch(Args[i] as string))
+                                                {
+                                                    var strid = new Regex(@"((<@)(?:!))").Replace(Args[i] as string, "").Replace(">", "");
+                                                    var id = ulong.Parse(strid);
+                                                    var member = guild.Members.FirstOrDefault(x => x.UserData.Id == id);
+                                                    var cachedUser = CachedUsers.FirstOrDefault(x => x.Id == id);
+                                                    if (member != null && currentarg.GetType() == typeof(DiscordMember)) currentarg = member;
+                                                    else if (cachedUser != null) currentarg = cachedUser;
+                                                }
+                                                else
+                                                {
+                                                    var type = cmd.Parameters[i].ParameterType;
+                                                    if (type != typeof(SlothCommandContext))
+                                                        currentarg = Convert.ChangeType(Args[i], type);
+                                                }
+                                                var check = cmd?.Parameters[i + 1]?.CustomAttributes.Any(y => y.AttributeType == typeof(RemainingStringAttribute));
+                                                if (check != null)
+                                                    if ((bool)check)
+                                                    {
+                                                        var sb = new StringBuilder();
+                                                        for (var o = 0; o < Args.Count; o++)
+                                                            if (Args.IndexOf(Args[o]) >= Args.IndexOf(Args[i]))
+                                                                sb.Append($" {Args[o]}");
+                                                        passargs.Add(sb.ToString());
+                                                        break;
+                                                    }
+                                                passargs.Add(currentarg);
+                                            }
+                                            cmd.Method.Invoke(cmd.ClassInstance, passargs.ToArray());
+                                        }
+                                        break;
+                                    }
+                                case DispatchType.TYPING_START:
+                                    {
+                                        if (LogActions)
+                                        {
+                                            Console.ForegroundColor = ConsoleColor.DarkGreen;
+                                            Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Received TYPING START");
+                                            Console.ForegroundColor = ConsoleColor.White;
+                                        }
+                                        var jobj = JObject.Parse(data.EventPayload.ToString());
+                                        var chid = ulong.Parse(jobj["channel_id"].ToString());
+                                        var usid = ulong.Parse(jobj["user_id"].ToString());
+                                        var guild = Guilds?.FirstOrDefault(x => x.Channels.Any(z => z.Id == chid)) ?? null;
+                                        if (guild != null)
+                                        {
+                                            TypingStarted?.Invoke(this, new TypingStartArgs()
+                                            {
+                                                Channel = guild.Channels.FirstOrDefault(x => x.Id == chid),
+                                                Member = guild.Members.FirstOrDefault(x => x.UserData.Id == usid),
+                                                Guild = guild ?? null,
+                                                ChannelId = chid,
+                                                UserId = usid
                                             });
                                         }
-                                        for (var i = 0; i < Args.Count; i++)
-                                        {
-                                            object currentarg = Args[i];
-                                            if (new Regex(@"(<@(?:!)\d+>)").IsMatch(Args[i] as string))
-                                            {
-                                                var strid = new Regex(@"((<@)(?:!))").Replace(Args[i] as string, "").Replace(">", "");
-                                                var id = ulong.Parse(strid);
-                                                var member = guild.Members.FirstOrDefault(x => x.UserData.Id == id);
-                                                var cachedUser = CachedUsers.FirstOrDefault(x => x.Id == id);
-                                                if (member != null  && currentarg.GetType() == typeof(DiscordMember)) currentarg = member;
-                                                else if (cachedUser != null) currentarg = cachedUser;
-                                            }
-                                            else
-                                            {
-                                                var type = cmd.Parameters[i + 1].ParameterType;
-                                                currentarg = Convert.ChangeType(Args[i], type);
-                                            }
-                                            passargs.Add(currentarg);
-                                        }
-                                        cmd.Method.Invoke(cmd.ClassInstance, passargs.ToArray());
+                                        break;
                                     }
-                                    break;
-                                }
-                            default:
-                                {
-                                    UnknownEvent?.Invoke(this, new UnkownEventArgs()
+                                default:
                                     {
-                                        EventName = data.EventName,
-                                        OPCode = ((int)data.Code)
-                                    });
-                                    break;
-                                }
+                                        UnknownEvent?.Invoke(this, new UnkownEventArgs()
+                                        {
+                                            EventName = data.EventName,
+                                            OPCode = ((int)data.Code)
+                                        });
+                                        break;
+                                    }
+                            }
+                        }
+                        else
+                        {
+                            if (LogActions)
+                            {
+                                Console.ForegroundColor = ConsoleColor.DarkGreen;
+                                Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Received UNKNOWN EVENT ({data.EventName})");
+                                Console.ForegroundColor = ConsoleColor.White;
+                            }
+                            UnknownEvent?.Invoke(this, new UnkownEventArgs()
+                            {
+                                EventName = data.EventName,
+                                OPCode = (int)data.Code
+                            });
                         }
                         break;
                     }
                 case OPCode.HeartbeatAck:
                     {
-                        Heartbeated?.Invoke(this, new OnHeartbeatArgs() { Message = "WebSocket Heartbeat Ack" });
+                        if (LogActions)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Cyan;
+                            Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Gateway HEARTBEAT ACKNOWLEDGE");
+                            Console.ForegroundColor = ConsoleColor.White;
+                        }
+                        Heartbeated?.Invoke(this, "WebSocket Heartbeat Ack");
                         break;
                     }
                 case OPCode.Reconnect:
                     {
-                        await WebSocketClient.CloseAsync();
+                        if (LogActions)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Cyan;
+                            Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Gateway RECONNECT");
+                            Console.ForegroundColor = ConsoleColor.White;
+                        }
+                            await WebSocketClient.CloseAsync();
                         await WebSocketClient.OpenAsync();
                         var tsk = new Task(SendHeartbeats);
                         tsk.Start();
@@ -259,6 +405,11 @@ namespace SlothCord
                     }
                 case OPCode.InvalidSession:
                     {
+                        if (LogActions)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Cyan;
+                            Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Gateway INVALID SESSION");
+                        }
                         if ((bool)data.EventPayload)
                         {
                             await Task.Delay(1000);
@@ -283,6 +434,12 @@ namespace SlothCord
                     }
                 default:
                     {
+                        if (LogActions)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Cyan;
+                            Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Gateway UNKOWN EVENT {data.EventName}");
+                            Console.ForegroundColor = ConsoleColor.White;
+                        }
                         UnknownEvent?.Invoke(this, new UnkownEventArgs()
                         {
                             EventName = data.EventName,
@@ -295,6 +452,12 @@ namespace SlothCord
 
         internal Task SendIdentifyAsync()
         {
+            if (LogActions)
+            {
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Gateway SEND IDENTIFY");
+                Console.ForegroundColor = ConsoleColor.White;
+            }
             var Content = JObject.Parse(JsonConvert.SerializeObject(new IdentifyPayload()
             {
                 Token = $"{this.TokenType} {this.Token}",
@@ -319,6 +482,12 @@ namespace SlothCord
             {
                 if (WebSocketClient.State == WebSocketState.Open)
                 {
+                    if (LogActions)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Cyan;
+                        Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Gateway SEND HEARTBEAT");
+                        Console.ForegroundColor = ConsoleColor.White;
+                    }
                     WebSocketClient.Send(@"{""op"":1, ""t"":null,""d"":null,""s"":null}");
                     await Task.Delay(_heartbeatInterval);
                 }
