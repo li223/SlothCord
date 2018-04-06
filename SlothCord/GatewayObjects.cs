@@ -112,6 +112,13 @@ namespace SlothCord
         public DiscordPresence Presence { get; internal set; }
 
     }
+    internal class ChannelPinPayload
+    {
+        [JsonProperty("channel_id")]
+        public ulong ChnanelId { get; set; }
+        [JsonProperty("last_pin_timestamp")]
+        public DateTime LastPinTimestamp { get; set; }
+    }
     internal class Properties
     {
         [JsonProperty("$os")]

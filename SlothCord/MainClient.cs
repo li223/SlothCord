@@ -16,6 +16,12 @@ namespace SlothCord
 {
     public class DiscordClient : ApiBase
     {
+        public event OnHttpError HttpError;
+        public event OnMessageUpdate MessageUpdate;
+        public event OnChannelEvent PinUpdate;
+        public event OnChannelEvent ChannelUpdate;
+        public event OnChannelEvent ChannelDelete;
+        public event OnChannelEvent ChannelCreate;
         public event OnTypingStart TypingStarted;
         public event OnCommandError CommandErrored;
         public event OnMessageCreate MessageCreated;
@@ -182,7 +188,7 @@ namespace SlothCord
                         }
                         if (_sessionId == "")
                         {
-                            if(Compress) Guilds = await this.GetUserGuildsAsync() as IReadOnlyList<DiscordGuild>;
+                            if (Compress) Guilds = await this.GetUserGuildsAsync() as IReadOnlyList<DiscordGuild>;
                             var pl = JsonConvert.DeserializeObject<GatewayHello>(data.EventPayload.ToString());
                             _heartbeatInterval = pl.HeartbeatInterval;
                             var hbt = new Task(SendHeartbeats, TaskCreationOptions.LongRunning);
@@ -314,7 +320,7 @@ namespace SlothCord
                                                         var id = ulong.Parse(strid);
                                                         var member = guild.Members.FirstOrDefault(x => x.UserData.Id == id);
                                                         var cachedUser = CachedUsers.FirstOrDefault(x => x.Id == id);
-                                                        if (member != null && currentarg.GetType() == typeof(DiscordMember)) currentarg = member;
+                                                        if (member != null && currentarg.GetType() == typeof(DiscordGuildMember)) currentarg = member;
                                                         else if (cachedUser != null) currentarg = cachedUser;
                                                     }
                                                     else
@@ -340,7 +346,7 @@ namespace SlothCord
                                             {
                                                 cmd.Method.Invoke(cmd.ClassInstance, passargs.ToArray());
                                             }
-                                            catch(TargetParameterCountException)
+                                            catch (TargetParameterCountException)
                                             {
                                                 CommandErrored?.Invoke(cmd.ClassInstance, "Required parameter does not have a value");
                                             }
@@ -374,6 +380,67 @@ namespace SlothCord
                                                 UserId = usid
                                             });
                                         }
+                                        break;
+                                    }
+                                case DispatchType.CHANNEL_CREATE:
+                                    {
+                                        if (LogActions)
+                                        {
+                                            Console.ForegroundColor = ConsoleColor.DarkGreen;
+                                            Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Received CHANNEL CREATE");
+                                            Console.ForegroundColor = ConsoleColor.White;
+                                        }
+                                        var pl = JsonConvert.DeserializeObject<DiscordChannel>(data.EventPayload.ToString());
+                                        ChannelCreate?.Invoke(this, pl);
+                                        break;
+                                    }
+                                case DispatchType.CHANNEL_DELETE:
+                                    {
+                                        if (LogActions)
+                                        {
+                                            Console.ForegroundColor = ConsoleColor.DarkGreen;
+                                            Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Received CHANNEL DELETE");
+                                            Console.ForegroundColor = ConsoleColor.White;
+                                        }
+                                        var pl = JsonConvert.DeserializeObject<DiscordChannel>(data.EventPayload.ToString());
+                                        ChannelDelete?.Invoke(this, pl);
+                                        break;
+                                    }
+                                case DispatchType.CHANNEL_UPDATE:
+                                    {
+                                        if (LogActions)
+                                        {
+                                            Console.ForegroundColor = ConsoleColor.DarkGreen;
+                                            Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Received CHANNEL UPDATE");
+                                            Console.ForegroundColor = ConsoleColor.White;
+                                        }
+                                        var pl = JsonConvert.DeserializeObject<DiscordChannel>(data.EventPayload.ToString());
+                                        ChannelUpdate?.Invoke(this, pl);
+                                        break;
+                                    }
+                                case DispatchType.CHANNEL_PINS_UPDATE:
+                                    {
+                                        if (LogActions)
+                                        {
+                                            Console.ForegroundColor = ConsoleColor.DarkGreen;
+                                            Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Received CHANNEL PINS UPDATE");
+                                            Console.ForegroundColor = ConsoleColor.White;
+                                        }
+                                        var pl = JsonConvert.DeserializeObject<ChannelPinPayload>(data.EventPayload.ToString());
+                                        var channel = (Guilds.FirstOrDefault(x => x.Channels.Any(a => a.Id == pl.ChnanelId))).Channels.First(x => x.Id == pl.ChnanelId);
+                                        PinUpdate?.Invoke(this, channel);
+                                        break;
+                                    }
+                                case DispatchType.MESSAGE_UPDATE:
+                                    {
+                                        if (LogActions)
+                                        {
+                                            Console.ForegroundColor = ConsoleColor.DarkGreen;
+                                            Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Received MESSAGE UPDATE");
+                                            Console.ForegroundColor = ConsoleColor.White;
+                                        }
+                                        var pl = JsonConvert.DeserializeObject<DiscordMessage>(data.EventPayload.ToString());
+                                        MessageUpdate?.Invoke(this, pl);
                                         break;
                                     }
                                 default:
@@ -480,7 +547,11 @@ namespace SlothCord
             var response = await _httpClient.GetAsync(new Uri($"{_baseAddress}/users/@me/guilds"));
             var content = await response.Content.ReadAsStringAsync();
             if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<IEnumerable<DiscordGuild>>(content);
-            else return null;
+            else
+            {
+                HttpError?.Invoke(this, content);
+                return null;
+            }
         }
 
         internal Task SendIdentifyAsync()
@@ -538,6 +609,8 @@ namespace SlothCord
 
     public class GuildMethods : ApiBase
     {
+        public event OnHttpError HttpError;
+
         internal async Task CreateBanAsync(ulong guild_id, ulong member_id, int clear_days = 0, string reason = null)
         {
             if (clear_days < 0 || clear_days > 7)
@@ -547,11 +620,16 @@ namespace SlothCord
                 query += $"&reason={reason}";
             var request = new HttpRequestMessage(HttpMethod.Put, new Uri(query));
             var response = await _httpClient.SendAsync(request);
+            var content = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+                HttpError?.Invoke(this, content);
         }
     }
 
     public class ChannelMethods : ApiBase
-    { 
+    {
+        public event OnHttpError HttpError;
+
         internal async Task<IEnumerable<DiscordMessage>> GetMultipleMessagesAsync(ulong channel_id, int limit = 50, ulong? around = null, ulong? after = null, ulong? before = null)
         {
             var requeststring = $"{_baseAddress}/channels/{channel_id}/messages?limit={limit}";
@@ -562,22 +640,37 @@ namespace SlothCord
             if (after != null)
                 requeststring += $"&after={after}";
             var response = await _httpClient.GetAsync(new Uri(requeststring));
-            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<IEnumerable<DiscordMessage>>(await response.Content.ReadAsStringAsync());
-            else return null;
+            var content = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<IEnumerable<DiscordMessage>>(content);
+            else
+            {
+                HttpError?.Invoke(this, content);
+                return null;
+            }
         }
 
         internal async Task<DiscordMessage> GetSingleMessageAsync(ulong channel_id, ulong message_id)
         {
             var response = await _httpClient.GetAsync(new Uri($"{_baseAddress}/channels/{channel_id}/messages/{message_id}"));
-            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordMessage>(await response.Content.ReadAsStringAsync());
-            else return null;
+            var content = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordMessage>(content);
+            else
+            {
+                HttpError?.Invoke(this, content);
+                return null;
+            }
         }
 
         internal async Task<DiscordChannel> DeleteGuildChannelAsync(ulong channel_id)
         {
             var response = await _httpClient.DeleteAsync(new Uri($"{_baseAddress}/channels/{channel_id}"));
-            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordChannel>(await response.Content.ReadAsStringAsync());
-            else return null;
+            var content = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordChannel>(content);
+            else
+            {
+                HttpError?.Invoke(this, content);
+                return null;
+            }
         }
 
         internal async Task<DiscordMessage> CreateMessageAsync(ulong channel_id, string message = null, bool is_tts = false, DiscordEmbed embed = null)
@@ -601,8 +694,13 @@ namespace SlothCord
                 Content = new StringContent(jsondata, Encoding.UTF8, "application/json")
             };
             var response = await _httpClient.SendAsync(request);
-            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordMessage>(await response.Content.ReadAsStringAsync());
-            else return null;
+            var content = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordMessage>(content);
+            else
+            {
+                HttpError?.Invoke(this, content);
+                return null;
+            }
         }
     }
 }

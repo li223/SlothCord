@@ -3,6 +3,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Drawing;
 
 namespace SlothCord
 {
@@ -141,7 +142,16 @@ namespace SlothCord
             this.PrivateEmbedFields.Add(f);
             return this;
         }
-
+        public DiscordEmbed AddField(string name, string value, bool inline)
+        {
+            this.PrivateEmbedFields.Add(new EmbedField()
+            {
+                IsInline = inline,
+                Name = name,
+                Value = value
+            });
+            return this;
+        }
         [JsonProperty("title")]
         public string Title { get; set; }
 
@@ -158,7 +168,14 @@ namespace SlothCord
         public DateTime? Timestamp { get; set; } = null;
 
         [JsonProperty("color", NullValueHandling = NullValueHandling.Ignore)]
-        public int Color { get; set; }
+        internal int IntegerColor { get; set; }
+
+        [JsonIgnore]
+        public Color Color
+        {
+            get { return Color.FromArgb(this.IntegerColor); }
+            set { this.IntegerColor = value.ToArgb(); }
+        }
 
         [JsonProperty("footer", NullValueHandling = NullValueHandling.Ignore)]
         public EmbedFooter Footer { get; set; }
@@ -269,7 +286,7 @@ namespace SlothCord
     }
     public sealed class DiscordGuild : GuildMethods
     {
-        public async Task BanMemberAsync(DiscordMember member, int clear_days = 0, string reason = null) =>
+        public async Task BanMemberAsync(DiscordGuildMember member, int clear_days = 0, string reason = null) =>
             await base.CreateBanAsync(this.Id, member.UserData.Id, clear_days, reason);
 
         public async Task BanB1nzyAsync() => 
@@ -348,12 +365,12 @@ namespace SlothCord
         public IReadOnlyList<DiscordPresence> Presences { get; private set; }
 
         [JsonProperty("members", NullValueHandling = NullValueHandling.Ignore)]
-        public IReadOnlyList<DiscordMember> Members { get; private set; }
+        public IReadOnlyList<DiscordGuildMember> Members { get; private set; }
 
         [JsonProperty("unavailable")]
         public bool IsUnavailable { get; private set; }
     }
-    public sealed class DiscordMember
+    public sealed class DiscordGuildMember
     {
         public bool HasRole(DiscordRole role) => (this.Roles == null) ? false : this.Roles.Any(x => x.Id == role.Id);
 
