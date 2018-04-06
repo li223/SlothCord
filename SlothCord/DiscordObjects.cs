@@ -142,6 +142,7 @@ namespace SlothCord
             this.PrivateEmbedFields.Add(f);
             return this;
         }
+
         public DiscordEmbed AddField(string name, string value, bool inline)
         {
             this.PrivateEmbedFields.Add(new EmbedField()
@@ -152,6 +153,7 @@ namespace SlothCord
             });
             return this;
         }
+
         [JsonProperty("title")]
         public string Title { get; set; }
 
@@ -168,14 +170,7 @@ namespace SlothCord
         public DateTime? Timestamp { get; set; } = null;
 
         [JsonProperty("color", NullValueHandling = NullValueHandling.Ignore)]
-        internal int IntegerColor { get; set; }
-
-        [JsonIgnore]
-        public Color Color
-        {
-            get { return Color.FromArgb(this.IntegerColor); }
-            set { this.IntegerColor = value.ToArgb(); }
-        }
+        public int Color { get; set; } = 0;
 
         [JsonProperty("footer", NullValueHandling = NullValueHandling.Ignore)]
         public EmbedFooter Footer { get; set; }
