@@ -355,6 +355,10 @@ namespace SlothCord
     }
     public sealed class DiscordMember
     {
+        public bool HasRole(DiscordRole role) => (this.Roles == null) ? false : this.Roles.Any(x => x.Id == role.Id);
+
+        public bool HasRole(ulong id) => (this.Roles == null) ? false : this.Roles.Any(x => x.Id == id);
+
         [JsonProperty("user")]
         public DiscordUser UserData { get; internal set; }
 

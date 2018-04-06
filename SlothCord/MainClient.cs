@@ -62,7 +62,7 @@ namespace SlothCord
         /// <summary>
         /// Whether or not to compress the payload
         /// </summary>
-        public bool Compress { get; private set; } = false;
+        public bool Compress { get; set; } = false;
 
         /// <summary>
         /// Let the library write to the console
@@ -129,6 +129,14 @@ namespace SlothCord
             }
         }
 
+        public async Task<DiscordUser> GetUserAsync(ulong user_id)
+        {
+            var response = await _httpClient.GetAsync(new Uri($"{_baseAddress}/users/{user_id}"));
+            var content = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordUser>(content);
+            else return null;
+        }
+
         private void WebSocketClient_Closed(object sender, EventArgs e)
         {
             if (LogActions)
@@ -159,7 +167,7 @@ namespace SlothCord
                 Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Socket Message Received");
                 Console.ForegroundColor = ConsoleColor.White;
             }
-                var data = JsonConvert.DeserializeObject<GatewayPayload>(e.Message);
+            var data = JsonConvert.DeserializeObject<GatewayPayload>(e.Message);
             if (!string.IsNullOrEmpty(data.Sequence.ToString()))
                 _sequence = (int)data.Sequence;
             switch (data.Code)
@@ -172,10 +180,11 @@ namespace SlothCord
                             Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Gateway HELLO");
                             Console.ForegroundColor = ConsoleColor.White;
                         }
-                            if (_sessionId == "")
+                        if (_sessionId == "")
                         {
-                            data.EventPayload = JsonConvert.DeserializeObject<GatewayHello>(data.EventPayload.ToString());
-                            _heartbeatInterval = (data.EventPayload as GatewayHello).HeartbeatInterval;
+                            if(Compress) Guilds = await this.GetUserGuildsAsync() as IReadOnlyList<DiscordGuild>;
+                            var pl = JsonConvert.DeserializeObject<GatewayHello>(data.EventPayload.ToString());
+                            _heartbeatInterval = pl.HeartbeatInterval;
                             var hbt = new Task(SendHeartbeats, TaskCreationOptions.LongRunning);
                             hbt.Start();
                             await SendIdentifyAsync();
@@ -202,7 +211,7 @@ namespace SlothCord
                                             Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Received READY");
                                             Console.ForegroundColor = ConsoleColor.White;
                                         }
-                                            data.EventPayload = JsonConvert.DeserializeObject<ReadyPayload>(data.EventPayload.ToString());
+                                        data.EventPayload = JsonConvert.DeserializeObject<ReadyPayload>(data.EventPayload.ToString());
                                         _guildsToDownload = (data.EventPayload as ReadyPayload).Guilds.Count;
                                         var pl = data.EventPayload as ReadyPayload;
                                         _sessionId = pl.SessionId;
@@ -281,6 +290,8 @@ namespace SlothCord
                                             var channel = guild.Channels.First(x => x.Id == msg.ChannelId);
                                             Args.Remove(Args[0]);
                                             var passargs = new List<object>();
+                                            int checkammount = 0;
+                                            var countval = cmd.Parameters.Count();
                                             if (cmd.Parameters.FirstOrDefault()?.ParameterType == typeof(SlothCommandContext))
                                             {
                                                 passargs.Add(new SlothCommandContext()
@@ -289,39 +300,54 @@ namespace SlothCord
                                                     Guild = guild,
                                                     User = msg.Author
                                                 });
+                                                countval--;
                                             }
-                                            for (var i = 0; i < Args.Count; i++)
+                                            for (var i = 0; i < countval; i++)
                                             {
-                                                object currentarg = Args[i];
-                                                if (new Regex(@"(<@(?:!)\d+>)").IsMatch(Args[i] as string))
+                                                checkammount = (passargs.Count - 1);
+                                                object currentarg = (Args.Count > checkammount) ? Args[i] : null;
+                                                if (currentarg != null)
                                                 {
-                                                    var strid = new Regex(@"((<@)(?:!))").Replace(Args[i] as string, "").Replace(">", "");
-                                                    var id = ulong.Parse(strid);
-                                                    var member = guild.Members.FirstOrDefault(x => x.UserData.Id == id);
-                                                    var cachedUser = CachedUsers.FirstOrDefault(x => x.Id == id);
-                                                    if (member != null && currentarg.GetType() == typeof(DiscordMember)) currentarg = member;
-                                                    else if (cachedUser != null) currentarg = cachedUser;
-                                                }
-                                                else
-                                                {
-                                                    var type = cmd.Parameters[i].ParameterType;
-                                                    if (type != typeof(SlothCommandContext))
-                                                        currentarg = Convert.ChangeType(Args[i], type);
-                                                }
-                                                var check = cmd?.Parameters[i + 1]?.CustomAttributes.Any(y => y.AttributeType == typeof(RemainingStringAttribute));
-                                                if (check != null)
-                                                    if ((bool)check)
+                                                    if (new Regex(@"(<@(?:!)\d+>)").IsMatch(currentarg as string))
                                                     {
-                                                        var sb = new StringBuilder();
-                                                        for (var o = 0; o < Args.Count; o++)
-                                                            if (Args.IndexOf(Args[o]) >= Args.IndexOf(Args[i]))
-                                                                sb.Append($" {Args[o]}");
-                                                        passargs.Add(sb.ToString());
-                                                        break;
+                                                        var strid = new Regex(@"((<@)(?:!))").Replace(Args[i] as string, "").Replace(">", "");
+                                                        var id = ulong.Parse(strid);
+                                                        var member = guild.Members.FirstOrDefault(x => x.UserData.Id == id);
+                                                        var cachedUser = CachedUsers.FirstOrDefault(x => x.Id == id);
+                                                        if (member != null && currentarg.GetType() == typeof(DiscordMember)) currentarg = member;
+                                                        else if (cachedUser != null) currentarg = cachedUser;
                                                     }
+                                                    else
+                                                    {
+                                                        var type = cmd.Parameters[i].ParameterType;
+                                                        if (type != typeof(SlothCommandContext))
+                                                            currentarg = Convert.ChangeType(Args[i], type);
+                                                    }
+                                                }
+                                                var check = cmd.Parameters[i].CustomAttributes.Any(y => y.AttributeType == typeof(RemainingStringAttribute));
+                                                if ((bool)check)
+                                                {
+                                                    var sb = new StringBuilder();
+                                                    for (var o = 0; o < Args.Count; o++)
+                                                        if (Args.IndexOf(Args[o]) >= Args.IndexOf(Args[i]))
+                                                            sb.Append($" {Args[o]}");
+                                                    passargs.Add(sb.ToString());
+                                                    break;
+                                                }
                                                 passargs.Add(currentarg);
                                             }
-                                            cmd.Method.Invoke(cmd.ClassInstance, passargs.ToArray());
+                                            try
+                                            {
+                                                cmd.Method.Invoke(cmd.ClassInstance, passargs.ToArray());
+                                            }
+                                            catch(TargetParameterCountException)
+                                            {
+                                                CommandErrored?.Invoke(cmd.ClassInstance, "Required parameter does not have a value");
+                                            }
+                                            catch
+                                            {
+                                                throw;
+                                            }
                                         }
                                         break;
                                     }
@@ -396,7 +422,7 @@ namespace SlothCord
                             Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Gateway RECONNECT");
                             Console.ForegroundColor = ConsoleColor.White;
                         }
-                            await WebSocketClient.CloseAsync();
+                        await WebSocketClient.CloseAsync();
                         await WebSocketClient.OpenAsync();
                         var tsk = new Task(SendHeartbeats);
                         tsk.Start();
@@ -447,6 +473,14 @@ namespace SlothCord
                     }
                     break;
             }
+        }
+
+        internal async Task<IEnumerable<DiscordGuild>> GetUserGuildsAsync()
+        {
+            var response = await _httpClient.GetAsync(new Uri($"{_baseAddress}/users/@me/guilds"));
+            var content = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<IEnumerable<DiscordGuild>>(content);
+            else return null;
         }
 
         internal Task SendIdentifyAsync()

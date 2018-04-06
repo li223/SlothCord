@@ -29,12 +29,19 @@ namespace SlothCord.Commands
             }
         }
     }
-    public class SlothCommandContext
+    public class SlothCommandContext : ApiBase
     {
         public DiscordGuild Guild { get; set; }
         public DiscordChannel Channel { get; set; }
         public DiscordUser User { get; set; }
         public async Task RespondAsync(string text = null, bool is_tts = false, DiscordEmbed embed = null) => await Channel.SendMessageAsync(text, is_tts, embed);
+        public async Task<DiscordUser> GetUserAsync(ulong user_id)
+        {
+            var response = await _httpClient.GetAsync(new Uri($"{_baseAddress}/users/{user_id}"));
+            var content = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordUser>(content);
+            else return null;
+        }
     }
     public class SlothUserCommand
     { 
