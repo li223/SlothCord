@@ -111,8 +111,7 @@ namespace SlothCord
                 WebSocketClient = new WebSocket(jobj.WSUrl);
                 WebSocketClient.MessageReceived += WebSocketClient_MessageReceived;
                 WebSocketClient.Closed += WebSocketClient_Closed;
-                //await WebSocketClient.OpenAsync();
-                WebSocketClient.Open();
+                await WebSocketClient.OpenAsync();
             }
             else
             {
