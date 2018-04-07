@@ -31,10 +31,10 @@ namespace SlothCord.Commands
     }
     public class SlothCommandContext : ApiBase
     {
-        public DiscordGuild Guild { get; set; }
-        public DiscordChannel Channel { get; set; }
-        public DiscordUser User { get; set; }
-        public DiscordClient Client { get; set; }
+        public DiscordGuild Guild { get; internal set; }
+        public DiscordChannel Channel { get; internal set; }
+        public DiscordUser User { get; internal set; }
+        public DiscordClient Client { get; internal set; }
         public async Task RespondAsync(string text = null, bool is_tts = false, DiscordEmbed embed = null) => await Channel.SendMessageAsync(text, is_tts, embed);
         public async Task<DiscordUser> GetUserAsync(ulong user_id)
         {
@@ -46,11 +46,11 @@ namespace SlothCord.Commands
     }
     public class SlothUserCommand
     { 
-        public string CommandName { get; set; }
-        public object ClassInstance { get; set; }
-        public string MethodName { get; set; }
-        public ParameterInfo[] Parameters { get; set; }
-        public MethodInfo Method { get; set; }
+        public string CommandName { get; internal set; }
+        public object ClassInstance { get; internal set; }
+        public string MethodName { get; internal set; }
+        public ParameterInfo[] Parameters { get; internal set; }
+        public MethodInfo Method { get; internal set; }
     }
     public class CommandAttribute : Attribute
     {

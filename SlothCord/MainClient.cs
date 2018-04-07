@@ -299,8 +299,12 @@ namespace SlothCord
                                         if(this.EnableUserCaching)
                                             if (this.InternalUserCache != null)
                                             {
-                                                this.InternalUserCache[this.InternalUserCache.IndexOf(prevmember.UserData)] = pl.User;
-                                                this.CachedUsers = this.InternalUserCache;
+                                                var index = this.InternalUserCache.IndexOf(prevmember.UserData);
+                                                if (index > -1)
+                                                {
+                                                    this.InternalUserCache[index] = pl.User;
+                                                    this.CachedUsers = this.InternalUserCache;
+                                                }
                                             }
                                         break;
                                     }
