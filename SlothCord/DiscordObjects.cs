@@ -77,10 +77,10 @@ namespace SlothCord
         public string Content { get; private set; }
 
         [JsonProperty("timestamp")]
-        public DateTime Timestamp { get; private set; }
+        public DateTimeOffset Timestamp { get; private set; }
 
         [JsonProperty("edited_timestamp", NullValueHandling = NullValueHandling.Ignore)]
-        public ulong? EditedTimestamp { get; private set; }
+        public DateTimeOffset? EditedTimestamp { get; private set; }
 
         [JsonProperty("tts")]
         public bool IsTTS { get; private set; }
@@ -167,7 +167,7 @@ namespace SlothCord
         public string Url { get; set; }
 
         [JsonProperty("timestamp")]
-        public DateTime? Timestamp { get; set; } = null;
+        public DateTimeOffset? Timestamp { get; set; } = null;
 
         [JsonProperty("color", NullValueHandling = NullValueHandling.Ignore)]
         public int Color { get; set; } = 0;

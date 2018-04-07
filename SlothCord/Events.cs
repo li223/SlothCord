@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace SlothCord
 {
     public delegate void OnHttpError(object sender, string e);
-    public delegate void OnMessageUpdate(object sender, DiscordMessage e);
+    public delegate void OnMessageUpdate(object sender, DiscordMessage b, DiscordMessage a);
     public delegate void OnChannelEvent(object sender, DiscordChannel e);
     public delegate void OnTypingStart(object sender, TypingStartArgs e);
     public delegate void OnCommandError(object sender, string e);

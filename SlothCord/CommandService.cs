@@ -34,6 +34,7 @@ namespace SlothCord.Commands
         public DiscordGuild Guild { get; set; }
         public DiscordChannel Channel { get; set; }
         public DiscordUser User { get; set; }
+        public DiscordClient Client { get; set; }
         public async Task RespondAsync(string text = null, bool is_tts = false, DiscordEmbed embed = null) => await Channel.SendMessageAsync(text, is_tts, embed);
         public async Task<DiscordUser> GetUserAsync(ulong user_id)
         {

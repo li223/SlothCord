@@ -68,7 +68,7 @@ namespace SlothCord
         [JsonProperty("user_id")]
         public ulong UserId { get; private set; }
         [JsonProperty("timestamp")]
-        public DateTime Timestamp { get; private set; }
+        public DateTimeOffset Timestamp { get; private set; }
         [JsonProperty("channel_id")]
         public ulong ChannelId { get; private set; }
     }
@@ -117,7 +117,7 @@ namespace SlothCord
         [JsonProperty("channel_id")]
         public ulong ChnanelId { get; set; }
         [JsonProperty("last_pin_timestamp")]
-        public DateTime LastPinTimestamp { get; set; }
+        public DateTimeOffset LastPinTimestamp { get; set; }
     }
     internal class Properties
     {

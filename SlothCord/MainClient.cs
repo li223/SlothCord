@@ -43,7 +43,11 @@ namespace SlothCord
         private int _heartbeatInterval = 0;
 
         internal List<DiscordGuild> AvailableGuilds = new List<DiscordGuild>();
-        internal List<DiscordUser> CachedUsers = new List<DiscordUser>();
+        internal List<DiscordUser> InternalUserCache = new List<DiscordUser>();
+        internal List<DiscordMessage> InternalMessageCache = new List<DiscordMessage>();
+
+        public IReadOnlyList<DiscordUser> CachedUsers { get; internal set; }
+        public IReadOnlyList<DiscordMessage> CachedMessages { get; internal set; }
 
         /// <summary>
         /// Your bot token
@@ -74,6 +78,20 @@ namespace SlothCord
         /// Let the library write to the console
         /// </summary>
         public bool LogActions { get; set; } = false;
+
+        /// <summary>
+        /// Whether or not to add users to a collection
+        /// </summary>
+        public bool EnableUserCaching { get; set; } = true;
+
+        /// <summary>
+        /// Whether or not to add users to a collection
+        /// </summary>
+        public bool EnableMessageCaching { get; set; } = false;
+
+        public int MessageCacheLimit { get; set; } = 300;
+
+        public int UserCacheLimit { get; set; } = 300;
 
         /// <summary>
         /// How many users have to be in a guild before it's considered large
@@ -248,7 +266,14 @@ namespace SlothCord
                                             this.Guilds = AvailableGuilds;
                                             GuildsDownloaded?.Invoke(this, this.Guilds);
                                         }
-                                        CachedUsers.AddRange(guild.Members.Select(x => x.UserData));
+                                        if (EnableUserCaching)
+                                        {
+                                            if (InternalUserCache.Count > UserCacheLimit)
+                                                for (var count = guild.Members.Select(x => x.UserData).Count(); count != 0; count--)
+                                                    InternalUserCache.RemoveAt(0);
+                                            InternalUserCache.AddRange(guild.Members.Select(x => x.UserData));
+                                            this.CachedUsers = InternalUserCache;
+                                        }
                                         break;
                                     }
                                 case DispatchType.PRESENCE_UPDATE:
@@ -262,7 +287,8 @@ namespace SlothCord
                                         var pl = JsonConvert.DeserializeObject<PresencePayload>(data.EventPayload.ToString());
                                         var guild = this.Guilds.First(x => x.Id == pl.GuildId);
                                         var member = guild.Members.First(x => x.UserData.Id == pl.User.Id);
-                                        var args = new PresenceUpdateArgs() { MemberBefore = member };
+                                        var prevmember = member;
+                                        var args = new PresenceUpdateArgs() { MemberBefore = prevmember };
                                         member.UserData = pl.User;
                                         member.Nickname = pl.Nickname;
                                         member.UserData.Status = pl.Status;
@@ -270,6 +296,12 @@ namespace SlothCord
                                         member.UserData.Game = pl.Game;
                                         args.MemberAfter = member;
                                         PresenceUpdated?.Invoke(this, args);
+                                        if(this.EnableUserCaching)
+                                            if (this.InternalUserCache != null)
+                                            {
+                                                this.InternalUserCache[this.InternalUserCache.IndexOf(prevmember.UserData)] = pl.User;
+                                                this.CachedUsers = this.InternalUserCache;
+                                            }
                                         break;
                                     }
                                 case DispatchType.MESSAGE_CREATE:
@@ -281,6 +313,14 @@ namespace SlothCord
                                             Console.ForegroundColor = ConsoleColor.White;
                                         }
                                         var msg = JsonConvert.DeserializeObject<DiscordMessage>(data.EventPayload.ToString());
+                                        if (EnableMessageCaching)
+                                        {
+                                            if (InternalMessageCache.Count > MessageCacheLimit)
+                                                for (var count = InternalMessageCache.Count; count != 0; count--)
+                                                    InternalMessageCache.RemoveAt(0);
+                                            InternalMessageCache.Add(msg);
+                                            this.CachedMessages = InternalMessageCache;
+                                        }
                                         MessageCreated?.Invoke(this, msg);
                                         if (msg.Content.StartsWith(this.StringPrefix))
                                         {
@@ -304,7 +344,8 @@ namespace SlothCord
                                                 {
                                                     Channel = channel,
                                                     Guild = guild,
-                                                    User = msg.Author
+                                                    User = msg.Author,
+                                                    Client = this
                                                 });
                                                 countval--;
                                             }
@@ -319,7 +360,7 @@ namespace SlothCord
                                                         var strid = new Regex(@"((<@)(?:!))").Replace(Args[i] as string, "").Replace(">", "");
                                                         var id = ulong.Parse(strid);
                                                         var member = guild.Members.FirstOrDefault(x => x.UserData.Id == id);
-                                                        var cachedUser = CachedUsers.FirstOrDefault(x => x.Id == id);
+                                                        var cachedUser = InternalUserCache?.FirstOrDefault(x => x.Id == id);
                                                         if (member != null && currentarg.GetType() == typeof(DiscordGuildMember)) currentarg = member;
                                                         else if (cachedUser != null) currentarg = cachedUser;
                                                     }
@@ -440,7 +481,14 @@ namespace SlothCord
                                             Console.ForegroundColor = ConsoleColor.White;
                                         }
                                         var pl = JsonConvert.DeserializeObject<DiscordMessage>(data.EventPayload.ToString());
-                                        MessageUpdate?.Invoke(this, pl);
+                                        var prevmsg = this.CachedMessages?.FirstOrDefault(x => x.Id == pl.Id);
+                                        MessageUpdate?.Invoke(this, prevmsg, pl);
+                                        if(this.EnableMessageCaching)
+                                            if (this.InternalMessageCache != null)
+                                            {
+                                                this.InternalMessageCache[this.InternalMessageCache.IndexOf(prevmsg)] = pl;
+                                                this.CachedMessages = this.InternalMessageCache;
+                                            }
                                         break;
                                     }
                                 default:
