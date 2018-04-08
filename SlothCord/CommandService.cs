@@ -11,6 +11,7 @@ namespace SlothCord.Commands
 {
     public class CommandService
     {
+        public event OnCommandError CommandErrored;
         internal List<SlothUserCommand> UserDefinedCommands = new List<SlothUserCommand>();
         internal List<SlothUserCommandGroup> UserDefinedGroups = new List<SlothUserCommandGroup>();
 
@@ -56,6 +57,114 @@ namespace SlothCord.Commands
                 Parameters = x.GetParameters(),
                 CommandName = x.GetCustomAttribute<CommandAttribute>().CommandName
             }));
+        }
+        internal async Task ConvertArgumentsAsync(string prefix, DiscordClient client, DiscordMessage msg)
+        {
+            List<object> Args = new List<object>();
+            Args.AddRange(msg.Content.Replace(prefix, "").Split(' ').ToList());
+            var group = UserDefinedGroups.FirstOrDefault(x => x.GroupName == (string)Args[0]);
+            if (group == null)
+            {
+                var cmd = UserDefinedCommands.FirstOrDefault(x => x.CommandName == (Args[0] as string));
+                if (cmd == null)
+                {
+                    CommandErrored?.Invoke(this, "Command does not exist");
+                    return;
+                }
+                Args.Remove(Args[0]);
+                await ExecuteCommandAsync(client, msg, Args, cmd);
+            }
+            else
+            {
+                Args.Remove(Args[0]);
+                var cmd = group.Commands?.FirstOrDefault(x => x.CommandName == (Args[0] as string));
+                if (cmd == null)
+                {
+                    if (!group.InvokeWithoutSubCommand)
+                    {
+                        CommandErrored?.Invoke(this, "Command does not exist");
+                        return;
+                    }
+                    else
+                    {
+                        if (group.GroupExecuteCommand == null || group.GroupExecuteCommand.Method == null)
+                        {
+                            CommandErrored?.Invoke(this, "Command does not exist and no ExecuteAsync method exists");
+                            return;
+                        }
+                        else cmd = group.GroupExecuteCommand;
+                    }
+                }
+                if (cmd != group.GroupExecuteCommand) Args.Remove(Args[0]);
+
+                await ExecuteCommandAsync(client, msg, Args, cmd);
+            }
+        }
+        public Task ExecuteCommandAsync(DiscordClient client, DiscordMessage msg, List<object> Args, SlothUserCommand cmd)
+        {
+            var guild = client.Guilds.FirstOrDefault(x => x.Channels.Any(a => a.Id == msg.ChannelId));
+            var channel = guild.Channels.First(x => x.Id == msg.ChannelId);
+            var passargs = new List<object>();
+            int checkammount = 0;
+            var countval = cmd.Parameters.Count();
+            if (cmd.Parameters.FirstOrDefault()?.ParameterType == typeof(SlothCommandContext))
+            {
+                passargs.Add(new SlothCommandContext()
+                {
+                    Channel = channel,
+                    Guild = guild,
+                    User = msg.Author,
+                    Client = client
+                });
+                countval--;
+            }
+            for (var i = 0; i < countval; i++)
+            {
+                checkammount = (passargs.Count - 1);
+                object currentarg = (Args.Count > checkammount) ? Args[i] : null;
+                if (currentarg != null)
+                {
+                    if (new Regex(@"(<@(?:!)\d+>)").IsMatch(currentarg as string))
+                    {
+                        var strid = new Regex(@"((<@)(?:!))").Replace(Args[i] as string, "").Replace(">", "");
+                        var id = ulong.Parse(strid);
+                        var member = guild.Members.FirstOrDefault(x => x.UserData.Id == id);
+                        var cachedUser = client.InternalUserCache?.FirstOrDefault(x => x.Id == id);
+                        if (member != null && currentarg.GetType() == typeof(DiscordGuildMember)) currentarg = member;
+                        else if (cachedUser != null) currentarg = cachedUser;
+                    }
+                    else
+                    {
+                        var type = cmd.Parameters[i].ParameterType;
+                        if (type != typeof(SlothCommandContext))
+                            currentarg = Convert.ChangeType(Args[i], type);
+                    }
+                }
+                var check = cmd.Parameters[i].CustomAttributes.Any(y => y.AttributeType == typeof(RemainingStringAttribute));
+                if ((bool)check)
+                {
+                    var sb = new StringBuilder();
+                    for (var o = 0; o < Args.Count; o++)
+                        if (Args.IndexOf(Args[o]) >= Args.IndexOf(Args[i]))
+                            sb.Append($" {Args[o]}");
+                    passargs.Add(sb.ToString());
+                    break;
+                }
+                passargs.Add(currentarg);
+            }
+            try
+            {
+                cmd.Method.Invoke(cmd.ClassInstance, passargs.ToArray());
+            }
+            catch (TargetParameterCountException)
+            {
+                CommandErrored?.Invoke(this, "Required parameter does not have a value");
+            }
+            catch(Exception ex)
+            {
+                CommandErrored?.Invoke(this, ex.Message);
+            }
+            return Task.CompletedTask;
         }
     }
             
