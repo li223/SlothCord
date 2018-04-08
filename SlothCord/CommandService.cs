@@ -12,23 +12,53 @@ namespace SlothCord.Commands
     public class CommandService
     {
         internal List<SlothUserCommand> UserDefinedCommands = new List<SlothUserCommand>();
+        internal List<SlothUserCommandGroup> UserDefinedGroups = new List<SlothUserCommandGroup>();
+
         public void RegisterCommand<T>() where T : new()
         {
             var type = typeof(T);
-            var methods = type.GetMethods().Where(x => x.GetCustomAttribute(typeof(CommandAttribute)) != null && x.IsPublic);
-            foreach (var method in methods)
+            var groups = type.GetNestedTypes().Where(x => x.GetCustomAttribute<GroupAttribute>() != null);
+            foreach (var group in groups)
             {
-                UserDefinedCommands.Add(new SlothUserCommand()
+                var groupatt = group.GetCustomAttribute<GroupAttribute>();
+                var methods = group.GetMethods();
+                var exemeth = methods.FirstOrDefault(x => x.Name == "ExecuteAsync");
+                List<SlothUserCommand> cmds = new List<SlothUserCommand>();
+                for (var count = 0; count < group.GetMethods().Count(); count++)
+                    if (methods[count].HasAttribute<CommandAttribute>())
+                        cmds.Add(new SlothUserCommand()
+                        {
+                            ClassInstance = Activator.CreateInstance(group),
+                            MethodName = methods[count].Name,
+                            Method = methods[count],
+                            CommandName = methods[count].GetCustomAttribute<CommandAttribute>().CommandName,
+                            Parameters = methods[count].GetParameters()
+                        });
+                UserDefinedGroups.Add(new SlothUserCommandGroup()
                 {
-                    ClassInstance = new T(),
-                    MethodName = method.Name,
-                    Method = method,
-                    Parameters = method.GetParameters(),
-                    CommandName = method.GetCustomAttribute<CommandAttribute>().CommandName
+                    InvokeWithoutSubCommand = groupatt.InvokeWithoutSubCommand,
+                    GroupName = groupatt.GroupName,
+                    Commands = cmds,
+                    GroupExecuteCommand = (groupatt.InvokeWithoutSubCommand) ? new SlothUserCommand()
+                    {
+                        ClassInstance = Activator.CreateInstance(group),
+                        MethodName = exemeth?.Name,
+                        Method = exemeth,
+                        Parameters = exemeth?.GetParameters()
+                    } : null
                 });
             }
+            UserDefinedCommands.AddRange(type.GetMethods().Where(x => x.GetCustomAttribute<CommandAttribute>() != null && x.IsPublic).Select(x => new SlothUserCommand()
+            {
+                ClassInstance = new T(),
+                MethodName = x.Name,
+                Method = x,
+                Parameters = x.GetParameters(),
+                CommandName = x.GetCustomAttribute<CommandAttribute>().CommandName
+            }));
         }
     }
+            
     public class SlothCommandContext : ApiBase
     {
         public DiscordGuild Guild { get; internal set; }
@@ -44,6 +74,7 @@ namespace SlothCord.Commands
             else return null;
         }
     }
+
     public class SlothUserCommand
     { 
         public string CommandName { get; internal set; }
@@ -52,6 +83,16 @@ namespace SlothCord.Commands
         public ParameterInfo[] Parameters { get; internal set; }
         public MethodInfo Method { get; internal set; }
     }
+
+    public class SlothUserCommandGroup
+    {
+        public bool InvokeWithoutSubCommand { get; internal set; }
+        public SlothUserCommand GroupExecuteCommand { get; internal set; }
+        public string GroupName { get; internal set; }
+        public IReadOnlyList<SlothUserCommand> Commands { get; internal set; }
+    }
+
+    [AttributeUsage(AttributeTargets.Method)]
     public class CommandAttribute : Attribute
     {
         public CommandAttribute(string name)
@@ -60,5 +101,26 @@ namespace SlothCord.Commands
         }
         public string CommandName { get; private set; }
     }
+
+    [AttributeUsage(AttributeTargets.Class)]
+    public class GroupAttribute : Attribute
+    {
+        public GroupAttribute(string name, bool CanInvokeWithoutSubCommand = false)
+        {
+            this.GroupName = name;
+            this.InvokeWithoutSubCommand = CanInvokeWithoutSubCommand;
+        }
+        public string GroupName { get; private set; }
+        public bool InvokeWithoutSubCommand { get; private set; }
+    }
+
+    [AttributeUsage(AttributeTargets.Parameter)]
     public class RemainingStringAttribute : Attribute { }
+    public static class Extensions
+    {
+        public static bool HasAttribute<T>(this MethodInfo method)
+        {
+            return method.CustomAttributes.Any(x => x.AttributeType == typeof(T));
+        }
+    }
 }
