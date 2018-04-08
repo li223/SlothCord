@@ -172,7 +172,7 @@ namespace SlothCord.Commands
             }
             try
             {
-                var result = cmd.Method.Invoke(cmd.ClassInstance, passargs.ToArray());
+                cmd.Method.Invoke(cmd.ClassInstance, passargs.ToArray());
             }
             catch (TargetParameterCountException)
             {

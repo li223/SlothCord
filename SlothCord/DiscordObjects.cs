@@ -365,7 +365,7 @@ namespace SlothCord
         public IReadOnlyList<DiscordPresence> Presences { get; private set; }
 
         [JsonProperty("members", NullValueHandling = NullValueHandling.Ignore)]
-        public IReadOnlyList<DiscordGuildMember> Members { get; internal set; }
+        public IReadOnlyList<DiscordGuildMember> Members { get; private set; }
 
         [JsonProperty("unavailable")]
         public bool IsUnavailable { get; private set; }

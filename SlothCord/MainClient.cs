@@ -211,12 +211,6 @@ namespace SlothCord
                         }
                         if (_sessionId == "")
                         {
-                            if (Compress)
-                            {
-                                Guilds = await this.GetUserGuildsAsync() as IReadOnlyList<DiscordGuild>;
-                                foreach (var guild in Guilds)
-                                    guild.Members = await guild.GetMembersAsync() as IReadOnlyList<DiscordGuildMember>;
-                            }
                             var pl = JsonConvert.DeserializeObject<GatewayHello>(data.EventPayload.ToString());
                             _heartbeatInterval = pl.HeartbeatInterval;
                             var hbt = new Task(SendHeartbeats, TaskCreationOptions.LongRunning);
