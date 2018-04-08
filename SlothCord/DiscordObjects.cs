@@ -281,6 +281,11 @@ namespace SlothCord
     }
     public sealed class DiscordGuild : GuildMethods
     {
+        public async Task<IEnumerable<DiscordGuildMember>> GetMembersAsync()
+        {
+            return await base.ListGuildMembersAsync(this.Id);
+        }
+
         public async Task BanMemberAsync(DiscordGuildMember member, int clear_days = 0, string reason = null) =>
             await base.CreateBanAsync(this.Id, member.UserData.Id, clear_days, reason);
 
@@ -296,8 +301,8 @@ namespace SlothCord
         [JsonProperty("voice_states")]
         public IReadOnlyList<DiscordVoiceState> VoiceStates { get; private set; }
 
-        [JsonProperty("system_channel_id")]
-        public ulong DefaultChannelId { get; private set; }
+        [JsonProperty("system_channel_id", NullValueHandling = NullValueHandling.Ignore)]
+        public ulong? DefaultChannelId { get; private set; }
 
         [JsonProperty("id")]
         public ulong Id { get; private set; }
@@ -360,7 +365,7 @@ namespace SlothCord
         public IReadOnlyList<DiscordPresence> Presences { get; private set; }
 
         [JsonProperty("members", NullValueHandling = NullValueHandling.Ignore)]
-        public IReadOnlyList<DiscordGuildMember> Members { get; private set; }
+        public IReadOnlyList<DiscordGuildMember> Members { get; internal set; }
 
         [JsonProperty("unavailable")]
         public bool IsUnavailable { get; private set; }
@@ -416,14 +421,26 @@ namespace SlothCord
     }
     public sealed class DiscordChannel : ChannelMethods
     {
-        public async Task<DiscordMessage> SendMessageAsync(string message = null, bool is_tts = false, DiscordEmbed embed = null) => await base.CreateMessageAsync(this.Id, message, is_tts, embed);
+        public async Task<DiscordMessage> SendMessageAsync(string message = null, bool is_tts = false, DiscordEmbed embed = null)
+        {
+            return await base.CreateMessageAsync(this.Id, message, is_tts, embed);
+        }
 
-        public async Task<DiscordMessage> SendMessageAsync(DiscordMessage msg) => await base.CreateMessageAsync(this.Id, msg?.Content, msg.IsTTS, msg.Embeds.FirstOrDefault());
+        public async Task<DiscordMessage> SendMessageAsync(DiscordMessage msg)
+        {
+            return await base.CreateMessageAsync(this.Id, msg?.Content, msg.IsTTS, msg.Embeds.FirstOrDefault());
+        }
 
-        public async Task<DiscordMessage> GetMessageAsync(ulong id) => await base.GetSingleMessageAsync(this.Id, id);
+        public async Task<DiscordMessage> GetMessageAsync(ulong id)
+        {
+            return await base.GetSingleMessageAsync(this.Id, id);
+        }
 
-        public async Task<IEnumerable<DiscordMessage>> GetMessagesAsync(int limit = 50, ulong? around = null, ulong? after = null, ulong? before = null) => await base.GetMultipleMessagesAsync(this.Id, limit, around, after, before);
-        
+        public async Task<IEnumerable<DiscordMessage>> GetMessagesAsync(int limit = 50, ulong? around = null, ulong? after = null, ulong? before = null)
+        {
+            return await base.GetMultipleMessagesAsync(this.Id, limit, around, after, before);
+        }
+
         [JsonProperty("id")]
         public ulong Id { get; private set; }
         [JsonProperty("guild_id")]

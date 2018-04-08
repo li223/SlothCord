@@ -12,8 +12,6 @@ namespace SlothCord.Commands
     public class CommandService
     {
         public event OnCommandError CommandErrored;
-        internal List<SlothUserCommand> UserDefinedCommands = new List<SlothUserCommand>();
-        internal List<SlothUserCommandGroup> UserDefinedGroups = new List<SlothUserCommandGroup>();
 
         public void RegisterCommand<T>() where T : new()
         {
@@ -24,8 +22,10 @@ namespace SlothCord.Commands
                 var groupatt = group.GetCustomAttribute<GroupAttribute>();
                 var methods = group.GetMethods();
                 var exemeth = methods.FirstOrDefault(x => x.Name == "ExecuteAsync");
+
                 List<SlothUserCommand> cmds = new List<SlothUserCommand>();
                 for (var count = 0; count < group.GetMethods().Count(); count++)
+                {
                     if (methods[count].HasAttribute<CommandAttribute>())
                         cmds.Add(new SlothUserCommand()
                         {
@@ -33,13 +33,17 @@ namespace SlothCord.Commands
                             MethodName = methods[count].Name,
                             Method = methods[count],
                             CommandName = methods[count].GetCustomAttribute<CommandAttribute>().CommandName,
-                            Parameters = methods[count].GetParameters()
+                            Parameters = methods[count].GetParameters(),
+                            CommandNameAliases = methods[count].GetCustomAttribute<AliasesAttribute>()?.Aliases ?? null
                         });
+                }
+
                 UserDefinedGroups.Add(new SlothUserCommandGroup()
                 {
                     InvokeWithoutSubCommand = groupatt.InvokeWithoutSubCommand,
                     GroupName = groupatt.GroupName,
                     Commands = cmds,
+                    GroupNameAliases = group.GetCustomAttribute<AliasesAttribute>()?.Aliases ?? null,
                     GroupExecuteCommand = (groupatt.InvokeWithoutSubCommand) ? new SlothUserCommand()
                     {
                         ClassInstance = Activator.CreateInstance(group),
@@ -49,6 +53,7 @@ namespace SlothCord.Commands
                     } : null
                 });
             }
+
             UserDefinedCommands.AddRange(type.GetMethods().Where(x => x.GetCustomAttribute<CommandAttribute>() != null && x.IsPublic).Select(x => new SlothUserCommand()
             {
                 ClassInstance = new T(),
@@ -58,14 +63,21 @@ namespace SlothCord.Commands
                 CommandName = x.GetCustomAttribute<CommandAttribute>().CommandName
             }));
         }
+
+        internal List<SlothUserCommand> UserDefinedCommands = new List<SlothUserCommand>();
+
+        internal List<SlothUserCommandGroup> UserDefinedGroups = new List<SlothUserCommandGroup>();
+
         internal async Task ConvertArgumentsAsync(string prefix, DiscordClient client, DiscordMessage msg)
         {
             List<object> Args = new List<object>();
             Args.AddRange(msg.Content.Replace(prefix, "").Split(' ').ToList());
             var group = UserDefinedGroups.FirstOrDefault(x => x.GroupName == (string)Args[0]);
+            if (group == null) group = UserDefinedGroups.FirstOrDefault(x => x.GroupNameAliases?.Any(a => a == (string)Args[0]) ?? false);
             if (group == null)
             {
-                var cmd = UserDefinedCommands.FirstOrDefault(x => x.CommandName == (Args[0] as string));
+                var cmd = UserDefinedCommands.FirstOrDefault(x => x.CommandName == (string)Args[0]);
+                if(cmd == null) cmd = UserDefinedCommands.FirstOrDefault(x => x.CommandNameAliases?.Any(a => a == (string)Args[0]) ?? false);
                 if (cmd == null)
                 {
                     CommandErrored?.Invoke(this, "Command does not exist");
@@ -77,7 +89,12 @@ namespace SlothCord.Commands
             else
             {
                 Args.Remove(Args[0]);
-                var cmd = group.Commands?.FirstOrDefault(x => x.CommandName == (Args[0] as string));
+                SlothUserCommand cmd = null;
+                if (Args.Count > 0)
+                {
+                    cmd = group.Commands?.FirstOrDefault(x => x.CommandName == (string)Args[0]);
+                    if (cmd == null) cmd = UserDefinedCommands.FirstOrDefault(x => x.CommandNameAliases.Any(a => a == (string)Args[0]));
+                }
                 if (cmd == null)
                 {
                     if (!group.InvokeWithoutSubCommand)
@@ -100,10 +117,11 @@ namespace SlothCord.Commands
                 await ExecuteCommandAsync(client, msg, Args, cmd);
             }
         }
-        public Task ExecuteCommandAsync(DiscordClient client, DiscordMessage msg, List<object> Args, SlothUserCommand cmd)
+
+        internal Task ExecuteCommandAsync(DiscordClient client, DiscordMessage msg, List<object> Args, SlothUserCommand cmd)
         {
             var guild = client.Guilds.FirstOrDefault(x => x.Channels.Any(a => a.Id == msg.ChannelId));
-            var channel = guild.Channels.First(x => x.Id == msg.ChannelId);
+            var channel = guild.Channels.FirstOrDefault(x => x.Id == msg.ChannelId);
             var passargs = new List<object>();
             int checkammount = 0;
             var countval = cmd.Parameters.Count();
@@ -154,7 +172,7 @@ namespace SlothCord.Commands
             }
             try
             {
-                cmd.Method.Invoke(cmd.ClassInstance, passargs.ToArray());
+                var result = cmd.Method.Invoke(cmd.ClassInstance, passargs.ToArray());
             }
             catch (TargetParameterCountException)
             {
@@ -174,7 +192,11 @@ namespace SlothCord.Commands
         public DiscordChannel Channel { get; internal set; }
         public DiscordUser User { get; internal set; }
         public DiscordClient Client { get; internal set; }
-        public async Task RespondAsync(string text = null, bool is_tts = false, DiscordEmbed embed = null) => await Channel.SendMessageAsync(text, is_tts, embed);
+
+        public async Task<DiscordMessage> RespondAsync(string text = null, bool is_tts = false, DiscordEmbed embed = null)
+        {
+            return await Channel.SendMessageAsync(text, is_tts, embed);
+        }
         public async Task<DiscordUser> GetUserAsync(ulong user_id)
         {
             var response = await _httpClient.GetAsync(new Uri($"{_baseAddress}/users/{user_id}"));
@@ -191,6 +213,7 @@ namespace SlothCord.Commands
         public string MethodName { get; internal set; }
         public ParameterInfo[] Parameters { get; internal set; }
         public MethodInfo Method { get; internal set; }
+        public string[] CommandNameAliases { get; internal set; }
     }
 
     public class SlothUserCommandGroup
@@ -199,6 +222,7 @@ namespace SlothCord.Commands
         public SlothUserCommand GroupExecuteCommand { get; internal set; }
         public string GroupName { get; internal set; }
         public IReadOnlyList<SlothUserCommand> Commands { get; internal set; }
+        public string[] GroupNameAliases { get; internal set; }
     }
 
     [AttributeUsage(AttributeTargets.Method)]
@@ -223,8 +247,19 @@ namespace SlothCord.Commands
         public bool InvokeWithoutSubCommand { get; private set; }
     }
 
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
+    public class AliasesAttribute : Attribute
+    {
+        public AliasesAttribute(string[] aliases)
+        {
+            this.Aliases = aliases;
+        }
+        public string[] Aliases { get; private set; }
+    }
+
     [AttributeUsage(AttributeTargets.Parameter)]
     public class RemainingStringAttribute : Attribute { }
+
     public static class Extensions
     {
         public static bool HasAttribute<T>(this MethodInfo method)
