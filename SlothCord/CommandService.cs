@@ -93,7 +93,7 @@ namespace SlothCord.Commands
                 if (Args.Count > 0)
                 {
                     cmd = group.Commands?.FirstOrDefault(x => x.CommandName == (string)Args[0]);
-                    if (cmd == null) cmd = UserDefinedCommands.FirstOrDefault(x => x.CommandNameAliases.Any(a => a == (string)Args[0]));
+                    if (cmd == null) cmd = UserDefinedCommands.FirstOrDefault(x => x.CommandNameAliases?.Any(a => a == (string)Args[0]) ?? false);
                 }
                 if (cmd == null)
                 {
@@ -123,7 +123,7 @@ namespace SlothCord.Commands
             var guild = client.Guilds.FirstOrDefault(x => x.Channels.Any(a => a.Id == msg.ChannelId));
             var channel = guild.Channels.FirstOrDefault(x => x.Id == msg.ChannelId);
             var passargs = new List<object>();
-            int checkammount = 0;
+            int startpos = 0;
             var countval = cmd.Parameters.Count();
             if (cmd.Parameters.FirstOrDefault()?.ParameterType == typeof(SlothCommandContext))
             {
@@ -132,14 +132,27 @@ namespace SlothCord.Commands
                     Channel = channel,
                     Guild = guild,
                     User = msg.Author,
-                    Client = client
+                    Client = client,
+                    Member = guild.Members.FirstOrDefault(x => x.UserData.Id == msg.Author.Id)
                 });
                 countval--;
+                startpos++;
             }
+            var checkamount = passargs.Count;
             for (var i = 0; i < countval; i++)
             {
-                checkammount = (passargs.Count - 1);
-                object currentarg = (Args.Count > checkammount) ? Args[i] : null;
+                object currentarg = (Args.Count > checkamount) ? Args[i] : null;
+
+                var check = cmd.Parameters[startpos].CustomAttributes.Any(y => y.AttributeType == typeof(RemainingStringAttribute));
+                if ((bool)check)
+                {
+                    var sb = new StringBuilder();
+                    for (var o = 0; o < Args.Count; o++)
+                            sb.Append($" {Args[o]}");
+                    passargs.Add(sb.ToString());
+                    break;
+                }
+
                 if (currentarg != null)
                 {
                     if (new Regex(@"(<@(?:!)\d+>)").IsMatch(currentarg as string))
@@ -157,16 +170,6 @@ namespace SlothCord.Commands
                         if (type != typeof(SlothCommandContext))
                             currentarg = Convert.ChangeType(Args[i], type);
                     }
-                }
-                var check = cmd.Parameters[i].CustomAttributes.Any(y => y.AttributeType == typeof(RemainingStringAttribute));
-                if ((bool)check)
-                {
-                    var sb = new StringBuilder();
-                    for (var o = 0; o < Args.Count; o++)
-                        if (Args.IndexOf(Args[o]) >= Args.IndexOf(Args[i]))
-                            sb.Append($" {Args[o]}");
-                    passargs.Add(sb.ToString());
-                    break;
                 }
                 passargs.Add(currentarg);
             }
@@ -191,6 +194,7 @@ namespace SlothCord.Commands
         public DiscordGuild Guild { get; internal set; }
         public DiscordChannel Channel { get; internal set; }
         public DiscordUser User { get; internal set; }
+        public DiscordGuildMember Member { get; internal set; }
         public DiscordClient Client { get; internal set; }
 
         public async Task<DiscordMessage> RespondAsync(string text = null, bool is_tts = false, DiscordEmbed embed = null)
