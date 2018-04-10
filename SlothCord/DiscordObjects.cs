@@ -62,8 +62,20 @@ namespace SlothCord
         [JsonProperty("type")]
         public PlayingType Type { get; internal set; }
     }
-    public sealed class DiscordMessage
+    public sealed class DiscordMessage : MessageMethods
     {
+        public async Task<DiscordMessage> EditAsync(string content = null, DiscordEmbed embed = null)
+        {
+            if (content == null) content = this.Content;
+            if (embed == null) embed = this.Embeds.FirstOrDefault();
+            return await base.EditDiscordMessageAsync(this.ChannelId, this.Id, content, embed);
+        }
+
+        public async Task<DiscordMessage> DeleteAsync()
+        {
+            return await base.DeleteMessageAsync(this.ChannelId, this.Id);
+        }
+
         [JsonProperty("id")]
         public ulong Id { get; private set; }
 
@@ -281,6 +293,11 @@ namespace SlothCord
     }
     public sealed class DiscordGuild : GuildMethods
     {
+        public async Task<DiscordChannel> GetChannelAsync(ulong channel_id)
+        {
+            return await base.GetGuildChannelAsync(this.Id, channel_id);
+        }
+
         public async Task<IEnumerable<DiscordGuildMember>> GetMembersAsync()
         {
             return await base.ListGuildMembersAsync(this.Id);
@@ -421,6 +438,8 @@ namespace SlothCord
     }
     public sealed class DiscordChannel : ChannelMethods
     {
+        public async Task BulkDeleteMessagesAsync(ICollection<ulong> ids) => await base.BulkDeleteGuildMessagesAsync(this.GuildId, this.Id, ids);
+
         public async Task<DiscordMessage> SendMessageAsync(string message = null, bool is_tts = false, DiscordEmbed embed = null)
         {
             return await base.CreateMessageAsync(this.Id, message, is_tts, embed);
@@ -443,8 +462,8 @@ namespace SlothCord
 
         [JsonProperty("id")]
         public ulong Id { get; private set; }
-        [JsonProperty("guild_id")]
-        public ulong GuildId { get; private set; }
+        [JsonProperty("guild_id", NullValueHandling = NullValueHandling.Ignore)]
+        public ulong? GuildId { get; private set; }
         [JsonProperty("name")]
         public string Name { get; private set; }
         [JsonProperty("type")]

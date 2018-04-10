@@ -529,11 +529,35 @@ namespace SlothCord
             }
         }
 
+        public async Task<DiscordChannel> DeleteChannelAsync(ulong channel_id)
+        {
+            var response = await _httpClient.DeleteAsync(new Uri($"{_baseAddress}/channels/{channel_id}"));
+            var content = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordChannel>(content);
+            else
+            {
+                HttpError?.Invoke(this, content);
+                return null;
+            }
+        }
+
         public async Task<IEnumerable<DiscordGuild>> GetUserGuildsAsync()
         {
             var response = await _httpClient.GetAsync(new Uri($"{_baseAddress}/users/@me/guilds"));
             var content = await response.Content.ReadAsStringAsync();
             if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<IEnumerable<DiscordGuild>>(content);
+            else
+            {
+                HttpError?.Invoke(this, content);
+                return null;
+            }
+        }
+
+        public async Task<DiscordChannel> GetChannelAsync(ulong channel_id)
+        {
+            var response = await _httpClient.GetAsync(new Uri($"{_baseAddress}/channels/{channel_id}"));
+            var content = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordChannel>(content);
             else
             {
                 HttpError?.Invoke(this, content);
@@ -594,6 +618,45 @@ namespace SlothCord
         protected internal static Uri _baseAddress = new Uri("https://discordapp.com/api/v6");
     }
 
+    public class MessageMethods : ApiBase
+    {
+        public event OnHttpError HttpError;
+
+        internal async Task<DiscordMessage> EditDiscordMessageAsync(ulong channel_id, ulong message_id, string content, DiscordEmbed embed)
+        {
+            if (embed == null && content == null)
+            {
+                HttpError?.Invoke(this, "Cannot send empty message");
+                return null;
+            }
+            var obj = new MessageUpdatePayload()
+            {
+                Content = content,
+                Embed = embed
+            };
+            var response = await _httpClient.PutAsync(new Uri($"{_baseAddress}/channels/{channel_id}/messages/{message_id}"), new StringContent(JsonConvert.SerializeObject(obj)));
+            var rescont = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordMessage>(rescont);
+            else
+            {
+                HttpError?.Invoke(this, rescont);
+                return null;
+            }
+        }
+
+        internal async Task<DiscordMessage> DeleteMessageAsync(ulong channel_id, ulong message_id)
+        {
+            var response = await _httpClient.DeleteAsync(new Uri($"{_baseAddress}/channels/{channel_id}/messages/{message_id}"));
+            var content = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordMessage>(content);
+            else
+            {
+                HttpError?.Invoke(this, content);
+                return null;
+            }
+        }
+    }
+
     public class GuildMethods : ApiBase
     {
         public event OnHttpError HttpError;
@@ -625,11 +688,38 @@ namespace SlothCord
             }
             else return JsonConvert.DeserializeObject<IEnumerable<DiscordGuildMember>>(content);
         }
+
+        internal async Task<DiscordChannel> GetGuildChannelAsync(ulong guild_id, ulong channel_id)
+        {
+            var response = await _httpClient.GetAsync(new Uri($"{_baseAddress}/channels/{channel_id}"));
+            var content = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode)
+            {
+                var channel = JsonConvert.DeserializeObject<DiscordChannel>(content);
+                if (channel.GuildId == null || channel.GuildId != guild_id) return null;
+                else return channel;
+            }
+            else
+            {
+                HttpError?.Invoke(this, content);
+                return null;
+            }
+        }
     }
 
     public class ChannelMethods : ApiBase
     {
         public event OnHttpError HttpError;
+
+        internal async Task BulkDeleteGuildMessagesAsync(ulong? guild_id, ulong channel_id, ICollection<ulong> message_ids)
+        {
+            if (guild_id == null) return;
+            var msgs = new BulkDeletePayload()
+            {
+                Messages = message_ids.ToArray()
+            };
+            var response = await _httpClient.PostAsync(new Uri($"{_baseAddress}/channels{channel_id}/messages/bulk-delete"), new StringContent(JsonConvert.SerializeObject(msgs)));
+        }
 
         internal async Task<IEnumerable<DiscordMessage>> GetMultipleMessagesAsync(ulong channel_id, int limit = 50, ulong? around = null, ulong? after = null, ulong? before = null)
         {
@@ -662,7 +752,7 @@ namespace SlothCord
             }
         }
 
-        internal async Task<DiscordChannel> DeleteGuildChannelAsync(ulong channel_id)
+        internal async Task<DiscordChannel> DeleteChannelAsync(ulong channel_id)
         {
             var response = await _httpClient.DeleteAsync(new Uri($"{_baseAddress}/channels/{channel_id}"));
             var content = await response.Content.ReadAsStringAsync();

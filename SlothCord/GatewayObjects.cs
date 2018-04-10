@@ -119,6 +119,18 @@ namespace SlothCord
         [JsonProperty("last_pin_timestamp")]
         public DateTimeOffset LastPinTimestamp { get; set; }
     }
+    internal class MessageUpdatePayload
+    {
+        [JsonProperty("content")]
+        public string Content { get; set; }
+        [JsonProperty("embed")]
+        public DiscordEmbed Embed { get; set; }
+    }
+    internal class BulkDeletePayload
+    {
+        [JsonProperty("messages")]
+        public ulong[] Messages { get; set; }
+    }
     internal class Properties
     {
         [JsonProperty("$os")]
