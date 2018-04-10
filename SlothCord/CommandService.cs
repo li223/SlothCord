@@ -123,28 +123,31 @@ namespace SlothCord.Commands
             var guild = client.Guilds.FirstOrDefault(x => x.Channels.Any(a => a.Id == msg.ChannelId));
             var channel = guild.Channels.FirstOrDefault(x => x.Id == msg.ChannelId);
             var passargs = new List<object>();
-            int startpos = 0;
+            int pos = 0;
             var countval = cmd.Parameters.Count();
             if (cmd.Parameters.FirstOrDefault()?.ParameterType == typeof(SlothCommandContext))
             {
+                var member = guild.Members.FirstOrDefault(x => x.UserData.Id == msg.Author.Id);
+                var roles = new List<DiscordRole>();
+                foreach (var id in member.RoleIds)
+                    roles.Add(guild.Roles.FirstOrDefault(x => x.Id == id));
+                member.Roles = roles;
                 passargs.Add(new SlothCommandContext()
                 {
                     Channel = channel,
                     Guild = guild,
                     User = msg.Author,
                     Client = client,
-                    Member = guild.Members.FirstOrDefault(x => x.UserData.Id == msg.Author.Id)
+                    Member = member
                 });
                 countval--;
-                startpos++;
+                pos++;
             }
-            var checkamount = passargs.Count;
             for (var i = 0; i < countval; i++)
             {
-                object currentarg = (Args.Count > checkamount) ? Args[i] : null;
-
-                var check = cmd.Parameters[startpos].CustomAttributes.Any(y => y.AttributeType == typeof(RemainingStringAttribute));
-                if ((bool)check)
+                object currentarg = Args[i];
+                var check = cmd.Parameters[pos].CustomAttributes.Any(y => y.AttributeType == typeof(RemainingStringAttribute));
+                if (check)
                 {
                     var sb = new StringBuilder();
                     for (var o = 0; o < Args.Count; o++)
@@ -161,14 +164,17 @@ namespace SlothCord.Commands
                         var id = ulong.Parse(strid);
                         var member = guild.Members.FirstOrDefault(x => x.UserData.Id == id);
                         var cachedUser = client.InternalUserCache?.FirstOrDefault(x => x.Id == id);
-                        if (member != null && currentarg.GetType() == typeof(DiscordGuildMember)) currentarg = member;
+                        if (member != null && currentarg.GetType() == typeof(DiscordGuildMember))
+                        {
+                            member.Roles = member.RoleIds.Select(x => guild.Roles.FirstOrDefault(a => a.Id == x)) as IReadOnlyList<DiscordRole>;
+                            currentarg = member;
+                        }
                         else if (cachedUser != null) currentarg = cachedUser;
                     }
                     else
                     {
-                        var type = cmd.Parameters[i].ParameterType;
-                        if (type != typeof(SlothCommandContext))
-                            currentarg = Convert.ChangeType(Args[i], type);
+                        var type = cmd.Parameters[pos].ParameterType;
+                        currentarg = Convert.ChangeType(Args[i], type);
                     }
                 }
                 passargs.Add(currentarg);
@@ -201,6 +207,7 @@ namespace SlothCord.Commands
         {
             return await Channel.SendMessageAsync(text, is_tts, embed);
         }
+
         public async Task<DiscordUser> GetUserAsync(ulong user_id)
         {
             var response = await _httpClient.GetAsync(new Uri($"{_baseAddress}/users/{user_id}"));

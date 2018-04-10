@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace SlothCord
 {
+    public delegate void OnGenericEvent(object sender, object e);
     public delegate void OnHttpError(object sender, string e);
     public delegate void OnMessageUpdate(object sender, DiscordMessage b, DiscordMessage a);
     public delegate void OnChannelEvent(object sender, DiscordChannel e);

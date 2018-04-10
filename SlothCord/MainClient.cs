@@ -26,6 +26,9 @@ namespace SlothCord
         public event OnTypingStart TypingStarted;
         public event OnMessageCreate MessageCreated;
         public event OnPresenceUpdate PresenceUpdated;
+        public event OnGenericEvent RoleUpdated;
+        public event OnGenericEvent RoleCreated;
+        public event OnGenericEvent RoleDeleted;
         public event OnGuildsDownloaded GuildsDownloaded;
         public event OnGuildAvailable GuildAvailable;
         public event OnUnknownEvent UnknownEvent;
@@ -323,14 +326,6 @@ namespace SlothCord
                                     }
                                 case DispatchType.PRESENCE_UPDATE:
                                     {
-                                        /*
-                                        if (LogActions)
-                                        {
-                                            Console.ForegroundColor = ConsoleColor.DarkGreen;
-                                            Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Received PRESENCE UPDATE");
-                                            Console.ForegroundColor = ConsoleColor.White;
-                                        }
-                                        */
                                         var pl = JsonConvert.DeserializeObject<PresencePayload>(data.EventPayload.ToString());
                                         var guild = this.Guilds.FirstOrDefault(x => x.Id == pl.GuildId);
                                         var member = guild.Members?.FirstOrDefault(x => x.UserData.Id == pl.User.Id);
@@ -341,7 +336,10 @@ namespace SlothCord
                                             member.UserData = pl.User;
                                             member.Nickname = pl.Nickname;
                                             member.UserData.Status = pl.Status;
-                                            member.Roles = pl.RoleIds.Select(x => guild.Roles.FirstOrDefault(a => a.Id == x)) as IReadOnlyList<DiscordRole>;
+                                            var roles = new List<DiscordRole>();
+                                            foreach (var id in member.RoleIds)
+                                                roles.Add(guild.Roles.FirstOrDefault(x => x.Id == id));
+                                            member.Roles = roles;
                                             member.UserData.Game = pl.Game;
                                         }
                                         args.MemberAfter = member;
@@ -471,6 +469,42 @@ namespace SlothCord
                                                 this.InternalMessageCache[this.InternalMessageCache.IndexOf(prevmsg)] = pl;
                                                 this.CachedMessages = this.InternalMessageCache;
                                             }
+                                        break;
+                                    }
+                                case DispatchType.GUILD_ROLE_UPDATE:
+                                    {
+                                        if (LogActions)
+                                        {
+                                            Console.ForegroundColor = ConsoleColor.DarkGreen;
+                                            Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Received ROLE UPDATE");
+                                            Console.ForegroundColor = ConsoleColor.White;
+                                        }
+                                        var pl = JsonConvert.DeserializeObject<KeyValuePair<ulong, DiscordRole>>(data.EventPayload.ToString());
+                                        RoleUpdated?.Invoke(this, pl);
+                                        break;
+                                    }
+                                case DispatchType.GUILD_ROLE_CREATE:
+                                    {
+                                        if (LogActions)
+                                        {
+                                            Console.ForegroundColor = ConsoleColor.DarkGreen;
+                                            Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Received ROLE CREATE");
+                                            Console.ForegroundColor = ConsoleColor.White;
+                                        }
+                                        var pl = JsonConvert.DeserializeObject<KeyValuePair<ulong, DiscordRole>>(data.EventPayload.ToString());
+                                        RoleCreated?.Invoke(this, pl);
+                                        break;
+                                    }
+                                case DispatchType.GUILD_ROLE_DELETE:
+                                    {
+                                        if (LogActions)
+                                        {
+                                            Console.ForegroundColor = ConsoleColor.DarkGreen;
+                                            Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Received ROLE DELETE");
+                                            Console.ForegroundColor = ConsoleColor.White;
+                                        }
+                                        var pl = JsonConvert.DeserializeObject<KeyValuePair<ulong, ulong>>(data.EventPayload.ToString());
+                                        RoleDeleted?.Invoke(this, pl);
                                         break;
                                     }
                                 default:

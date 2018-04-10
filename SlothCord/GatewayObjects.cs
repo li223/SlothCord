@@ -11,6 +11,7 @@ namespace SlothCord
         [JsonProperty("shards")]
         public int RecommendedShards { get; internal set; }
     }
+
     internal class MessageCreatePayload
     {
         [JsonProperty("has_content")]
@@ -24,6 +25,7 @@ namespace SlothCord
         [JsonProperty("embed")]
         public DiscordEmbed Embed { get; internal set; }
     }
+
     internal class ReadyPayload
     {
         [JsonProperty("v")]
@@ -45,6 +47,7 @@ namespace SlothCord
         [JsonProperty("_trace")]
         public string[] Trace { get; private set; }
     }
+
     internal class GatewayPayload
     {
         [JsonProperty("t")]
@@ -56,6 +59,7 @@ namespace SlothCord
         [JsonProperty("d")]
         public object EventPayload { get; set; }
     }
+
     internal class GatewayHello
     {
         [JsonProperty("heartbeat_interval")]
@@ -63,6 +67,7 @@ namespace SlothCord
         [JsonProperty("_trace")]
         public IReadOnlyList<string> Trace { get; private set; }
     }
+
     internal class TypingStartPayload
     {
         [JsonProperty("user_id")]
@@ -72,6 +77,7 @@ namespace SlothCord
         [JsonProperty("channel_id")]
         public ulong ChannelId { get; private set; }
     }
+
     internal class PresencePayload
     {
         [JsonProperty("user")]
@@ -87,6 +93,7 @@ namespace SlothCord
         [JsonProperty("game", NullValueHandling = NullValueHandling.Ignore)]
         public DiscordGame Game { get; private set; }
     }
+
     internal class ResumePayload
     {
         [JsonProperty("s")]
@@ -96,6 +103,7 @@ namespace SlothCord
         [JsonProperty("session_id")]
         public string SessionId { get; internal set; }
     }
+
     internal class IdentifyPayload
     {
         [JsonProperty("token")]
@@ -112,6 +120,7 @@ namespace SlothCord
         public DiscordPresence Presence { get; internal set; }
 
     }
+
     internal class ChannelPinPayload
     {
         [JsonProperty("channel_id")]
@@ -119,6 +128,7 @@ namespace SlothCord
         [JsonProperty("last_pin_timestamp")]
         public DateTimeOffset LastPinTimestamp { get; set; }
     }
+
     internal class MessageUpdatePayload
     {
         [JsonProperty("content")]
@@ -126,11 +136,13 @@ namespace SlothCord
         [JsonProperty("embed")]
         public DiscordEmbed Embed { get; set; }
     }
+
     internal class BulkDeletePayload
     {
         [JsonProperty("messages")]
         public ulong[] Messages { get; set; }
     }
+
     internal class Properties
     {
         [JsonProperty("$os")]
@@ -140,5 +152,6 @@ namespace SlothCord
         [JsonProperty("device")]
         public string Device { get; private set; } = "SlothCord";
     }
+
     internal class UserSettings { }
 }
