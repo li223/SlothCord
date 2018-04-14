@@ -155,6 +155,7 @@ namespace SlothCord.Commands
                 Member = member,
                 Services = this.Services
             };
+            /*
             if (cmd.Method.HasAttribute<PreExecutionCheckAttribute>())
             {
                 var att = cmd.Method.GetCustomAttribute<PreExecutionCheckAttribute>();
@@ -166,6 +167,7 @@ namespace SlothCord.Commands
                         return;
                 }
             }
+            */
             var passargs = new List<object>();
             int pos = 0;
             var countval = cmd.Parameters.Count();
