@@ -11,6 +11,21 @@ namespace SlothCord.Commands
 {
     public class CommandService
     {
+        /// <summary>
+        /// Sets if commands can be ran via direct messages
+        /// </summary>
+        public bool AllowDmCommands { get; set; } = true;
+
+        /// <summary>
+        /// Service collection
+        /// </summary>
+        public IServiceProvider Services { get; set; }
+
+        /// <summary>
+        /// Prefix for commands
+        /// </summary>
+        public string StringPrefix { get; set; }
+
         public event OnCommandError CommandErrored;
 
         public void RegisterCommand<T>() where T : new()
@@ -68,10 +83,10 @@ namespace SlothCord.Commands
 
         internal List<SlothUserCommandGroup> UserDefinedGroups = new List<SlothUserCommandGroup>();
 
-        internal async Task ConvertArgumentsAsync(string prefix, DiscordClient client, DiscordMessage msg)
+        internal async Task ConvertArgumentsAsync(DiscordClient client, DiscordMessage msg)
         {
             List<object> Args = new List<object>();
-            Args.AddRange(msg.Content.Replace(prefix, "").Split(' ').ToList());
+            Args.AddRange(msg.Content.Replace(this.StringPrefix, "").Split(' ').ToList());
             var group = UserDefinedGroups.FirstOrDefault(x => x.GroupName == (string)Args[0]);
             if (group == null) group = UserDefinedGroups.FirstOrDefault(x => x.GroupNameAliases?.Any(a => a == (string)Args[0]) ?? false);
             if (group == null)
@@ -117,29 +132,46 @@ namespace SlothCord.Commands
                 await ExecuteCommandAsync(client, msg, Args, cmd);
             }
         }
-
-        internal Task ExecuteCommandAsync(DiscordClient client, DiscordMessage msg, List<object> Args, SlothUserCommand cmd)
+        
+        internal async Task ExecuteCommandAsync(DiscordClient client, DiscordMessage msg, List<object> Args, SlothUserCommand cmd)
         {
+            if (cmd.Method.HasAttribute<RequireOwnerAttribute>())
+            {
+                if (msg.Author.Id != client.CurrentUser.Id)
+                {
+                    return;
+                }
+            }
             var guild = client.Guilds.FirstOrDefault(x => x.Channels.Any(a => a.Id == msg.ChannelId));
             var channel = guild.Channels.FirstOrDefault(x => x.Id == msg.ChannelId);
+            var member = guild.Members.FirstOrDefault(x => x.UserData.Id == msg.Author.Id);
+            member.Roles = member.RoleIds.Select(x => guild.Roles.FirstOrDefault(a => a.Id == x)) as IReadOnlyList<DiscordRole>;
+            var context = new SlothCommandContext()
+            {
+                Channel = channel,
+                Guild = guild,
+                User = msg.Author,
+                Client = client,
+                Member = member,
+                Services = this.Services
+            };
+            if (cmd.Method.HasAttribute<PreExecutionCheckAttribute>())
+            {
+                var att = cmd.Method.GetCustomAttribute<PreExecutionCheckAttribute>();
+                switch (await att.PreCheckAsync(context))
+                {
+                    case true:
+                        break;
+                    case false:
+                        return;
+                }
+            }
             var passargs = new List<object>();
             int pos = 0;
             var countval = cmd.Parameters.Count();
             if (cmd.Parameters.FirstOrDefault()?.ParameterType == typeof(SlothCommandContext))
             {
-                var member = guild.Members.FirstOrDefault(x => x.UserData.Id == msg.Author.Id);
-                var roles = new List<DiscordRole>();
-                foreach (var id in member.RoleIds)
-                    roles.Add(guild.Roles.FirstOrDefault(x => x.Id == id));
-                member.Roles = roles;
-                passargs.Add(new SlothCommandContext()
-                {
-                    Channel = channel,
-                    Guild = guild,
-                    User = msg.Author,
-                    Client = client,
-                    Member = member
-                });
+                passargs.Add(context);
                 countval--;
                 pos++;
             }
@@ -162,13 +194,8 @@ namespace SlothCord.Commands
                     {
                         var strid = new Regex(@"((<@)(?:!))").Replace(Args[i] as string, "").Replace(">", "");
                         var id = ulong.Parse(strid);
-                        var member = guild.Members.FirstOrDefault(x => x.UserData.Id == id);
                         var cachedUser = client.InternalUserCache?.FirstOrDefault(x => x.Id == id);
-                        if (member != null && currentarg.GetType() == typeof(DiscordGuildMember))
-                        {
-                            member.Roles = member.RoleIds.Select(x => guild.Roles.FirstOrDefault(a => a.Id == x)) as IReadOnlyList<DiscordRole>;
-                            currentarg = member;
-                        }
+                        if (member != null && currentarg.GetType() == typeof(DiscordGuildMember)) currentarg = member;
                         else if (cachedUser != null) currentarg = cachedUser;
                     }
                     else
@@ -191,12 +218,13 @@ namespace SlothCord.Commands
             {
                 CommandErrored?.Invoke(this, ex.Message);
             }
-            return Task.CompletedTask;
+            return;
         }
     }
             
     public class SlothCommandContext : ApiBase
     {
+        public IServiceProvider Services { get; internal set; }
         public DiscordGuild Guild { get; internal set; }
         public DiscordChannel Channel { get; internal set; }
         public DiscordUser User { get; internal set; }
@@ -270,6 +298,18 @@ namespace SlothCord.Commands
 
     [AttributeUsage(AttributeTargets.Parameter)]
     public class RemainingStringAttribute : Attribute { }
+
+    [AttributeUsage(AttributeTargets.Method)]
+    public class RequireOwnerAttribute : Attribute { }
+
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
+    public class PreExecutionCheckAttribute : Attribute
+    { 
+        public virtual Task<bool> PreCheckAsync(SlothCommandContext ctx)
+        {
+            return Task.FromResult(true);
+        }
+    }
 
     public static class Extensions
     {

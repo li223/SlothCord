@@ -51,5 +51,6 @@ namespace SlothCord
     {
         public string Message { get; internal set; }
         public string Source { get; internal set; }
+        public Exception Exception { get; internal set; }  
     }
 }

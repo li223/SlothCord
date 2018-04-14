@@ -37,7 +37,6 @@ namespace SlothCord
         public event OnReady ClientReady;
         public event OnClientError ClientErrored;
         public event OnSocketDataReceived SocketErrored;
-        public CommandService Commands { get; internal set; } = new CommandService();
 
         private int _sequence = 0;
         private int _guildsToDownload = 0;
@@ -56,12 +55,7 @@ namespace SlothCord
         /// Your bot token
         /// </summary>
         public string Token { get; set; }
-
-        /// <summary>
-        /// Prefix for commands
-        /// </summary>
-        public string StringPrefix { get; set; }
-
+        
         /// <summary>
         /// The type of token passed
         /// </summary>
@@ -108,6 +102,11 @@ namespace SlothCord
         public int LargeThreashold { get; set; } = 250;
 
         /// <summary>
+        /// Command service used for bot commands
+        /// </summary>
+        public CommandService Commands { get; set; }
+
+        /// <summary>
         /// The current client as a user
         /// </summary>
         public DiscordUser CurrentUser { get; internal set; }
@@ -118,6 +117,9 @@ namespace SlothCord
         /// <returns></returns>
         public async Task ConnectAsync()
         {
+            if (TokenType != TokenType.Bot)
+                throw new NotSupportedException("Only bot tokens are supported");
+
             if (LogActions)
             {
                 Console.ForegroundColor = ConsoleColor.DarkGreen;
@@ -305,7 +307,11 @@ namespace SlothCord
                                         }
                                         var guild = JsonConvert.DeserializeObject<DiscordGuild>(data.EventPayload.ToString());
                                         foreach (var member in guild.Members)
+                                        {
                                             member.Roles = member.RoleIds.Select(x => guild.Roles.FirstOrDefault(a => a.Id == x)) as IReadOnlyList<DiscordRole>;
+                                            member.GuildId = guild.Id;
+                                            member.Guild = guild;
+                                        }
                                         AvailableGuilds.Add(guild);
                                         GuildAvailable?.Invoke(this, guild);
                                         _downloadedGuilds++;
@@ -329,10 +335,12 @@ namespace SlothCord
                                         var pl = JsonConvert.DeserializeObject<PresencePayload>(data.EventPayload.ToString());
                                         var guild = this.Guilds.FirstOrDefault(x => x.Id == pl.GuildId);
                                         var member = guild.Members?.FirstOrDefault(x => x.UserData.Id == pl.User.Id);
+                                        var user = this.CachedUsers?.FirstOrDefault(x => x.Id == pl.User.Id);
                                         var prevmember = member;
                                         var args = new PresenceUpdateArgs() { MemberBefore = prevmember };
                                         if (member != null)
                                         {
+                                            member.Guild = guild;
                                             member.UserData = pl.User;
                                             member.Nickname = pl.Nickname;
                                             member.UserData.Status = pl.Status;
@@ -341,6 +349,11 @@ namespace SlothCord
                                                 roles.Add(guild.Roles.FirstOrDefault(x => x.Id == id));
                                             member.Roles = roles;
                                             member.UserData.Game = pl.Game;
+                                        }
+                                        else
+                                        {
+                                            user = pl.User;
+                                            user.Game = pl.Game;
                                         }
                                         args.MemberAfter = member;
                                         PresenceUpdated?.Invoke(this, args);
@@ -374,8 +387,8 @@ namespace SlothCord
                                             this.CachedMessages = InternalMessageCache;
                                         }
                                         MessageCreated?.Invoke(this, msg);
-                                        if (msg.Content.StartsWith(this.StringPrefix))
-                                            await Commands.ConvertArgumentsAsync(this.StringPrefix, this, msg);
+                                        if (msg.Content.StartsWith(this.Commands.StringPrefix))
+                                            await Commands.ConvertArgumentsAsync(this, msg);
                                         break;
                                     }
                                 case DispatchType.TYPING_START:
@@ -507,6 +520,26 @@ namespace SlothCord
                                         RoleDeleted?.Invoke(this, pl);
                                         break;
                                     }
+                                case DispatchType.VOICE_STATE_UPDATE:
+                                    {
+                                        var pl = JsonConvert.DeserializeObject<VoiceStateUpdatePaylod>(data.EventPayload.ToString());
+                                        var guild = Guilds.FirstOrDefault(x => x.Id == pl.GuildId);
+                                        if (guild != null)
+                                        {
+                                            var member = guild.Members.FirstOrDefault(x => x.UserData.Id == pl.UserId);
+                                            if (member != null)
+                                            {
+                                                member.Guild = guild;
+                                                member.ChannelId = (ulong)pl.ChannelId;
+                                                member.IsDeaf = pl.IsDeaf;
+                                                member.IsMute = pl.IsMute;
+                                                member.IsSelfDeaf = pl.IsSelfDeaf;
+                                                member.IsSelfMute = pl.IsSelfMute;
+                                                member.IsMutedByCurrentUser = pl.IsMutedByCurrentUser;
+                                            }
+                                        }
+                                        break;
+                                    }
                                 default:
                                     {
                                         UnknownEvent?.Invoke(this, new UnkownEventArgs()
@@ -604,6 +637,15 @@ namespace SlothCord
                     }
                     break;
             }
+        }
+
+        public async Task<DiscordGuild> GetGuildAsync(ulong guild_id)
+        {
+            var response = await _httpClient.GetAsync(new Uri($"{_baseAddress}/guilds/{guild_id}"));
+            var content = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode)
+                return JsonConvert.DeserializeObject<DiscordGuild>(content);
+            else return null;
         }
 
         public async Task<DiscordChannel> DeleteChannelAsync(ulong channel_id)
@@ -720,6 +762,14 @@ namespace SlothCord
     {
         public event OnHttpError HttpError;
 
+        internal async Task LeaveGuildAsync(ulong guild_id)
+        {
+            var response = await _httpClient.DeleteAsync(new Uri($"{_baseAddress}/users/@me/guilds/{guild_id}"));
+            var content = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+                HttpError?.Invoke(this, content);
+        }
+
         internal async Task CreateBanAsync(ulong guild_id, ulong member_id, int clear_days = 0, string reason = null)
         {
             if (clear_days < 0 || clear_days > 7)
@@ -734,18 +784,40 @@ namespace SlothCord
                 HttpError?.Invoke(this, content);
         }
 
-        internal async Task<IEnumerable<DiscordGuildMember>> ListGuildMembersAsync(ulong guild_id)
+        internal async Task<IEnumerable<DiscordGuildMember>> ListGuildMembersAsync(ulong guild_id, int limit = 100, ulong? around = null)
         {
-            var query = $"{_baseAddress}/guilds/{guild_id}/members";
-            var request = new HttpRequestMessage(HttpMethod.Put, new Uri(query));
-            var response = await _httpClient.SendAsync(request);
+            var requeststring = $"{_baseAddress}/guilds/{guild_id}/members?limit={limit}";
+            if (around != null)
+                requeststring += $"&around={around}";
+            var response = await _httpClient.GetAsync(new Uri(requeststring));
             var content = await response.Content.ReadAsStringAsync();
-            if (!response.IsSuccessStatusCode)
+            if (response.IsSuccessStatusCode)
+            {
+                var members = JsonConvert.DeserializeObject<List<DiscordGuildMember>>(content);
+                for(var i = 0; i < members.Count(); i++)  members[i].GuildId = guild_id;
+                return members as IEnumerable<DiscordGuildMember>;
+            }
+            else
             {
                 HttpError?.Invoke(this, content);
                 return null;
             }
-            else return JsonConvert.DeserializeObject<IEnumerable<DiscordGuildMember>>(content);
+        }
+
+        internal async Task<DiscordGuildMember> ListGuildMemberAsync(ulong guild_id, ulong member_id)
+        {
+            var response = await _httpClient.GetAsync(new Uri($"{_baseAddress}/guilds/{guild_id}/members/{member_id}"));
+            var content = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode)
+            {
+                var member = JsonConvert.DeserializeObject<DiscordGuildMember>(content);
+                member.GuildId = guild_id;
+                return member;
+            }
+            else
+            {
+                return null;
+            }
         }
 
         internal async Task<DiscordChannel> GetGuildChannelAsync(ulong guild_id, ulong channel_id)
@@ -883,6 +955,34 @@ namespace SlothCord
 
     public class UserMethods : ApiBase
     {
+        internal async Task<DiscordChannel> CreateUserDmChannelAsync(ulong user_id)
+        {
+            var response = await _httpClient.PostAsync($"{_baseAddress}/users/@me/channels?recipient_id={user_id}", null);
+            var content = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordChannel>(content);
+            else return null;
+        }
+    }
+
+    public class MemberMethods : ApiBase
+    {
+        internal async Task ModifyAsync(ulong guild_id, ulong member_id, string nickname, IEnumerable<DiscordRole> roles, bool? is_muted, bool? is_deaf, ulong? channel_id)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Put, new Uri($"{_baseAddress}/guilds/{guild_id}/members/{member_id}"))
+            {
+                Content = new StringContent(JsonConvert.SerializeObject(new MemberModifyPayload()
+                {
+                    Nickname = nickname,
+                    Roles = roles,
+                    IsMute = is_muted,
+                    IsDeaf = is_deaf,
+                    ChannelId = channel_id
+                }))
+            };
+            var response = await _httpClient.SendAsync(request);
+            var content = await response.Content.ReadAsStringAsync();
+        }
+
         internal async Task<DiscordChannel> CreateUserDmChannelAsync(ulong user_id)
         {
             var response = await _httpClient.PostAsync($"{_baseAddress}/users/@me/channels?recipient_id={user_id}", null);

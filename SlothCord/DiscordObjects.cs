@@ -16,7 +16,7 @@ namespace SlothCord
         }
 
         [JsonProperty("status")]
-        public string Status { get; internal set; }
+        public StatusType Status { get; internal set; }
 
         [JsonProperty("game", NullValueHandling = NullValueHandling.Ignore)]
         public DiscordGame Game { get; internal set; }
@@ -44,6 +44,12 @@ namespace SlothCord
 
         [JsonProperty("avatar")]
         public string AvatarUrl { get; private set; }
+
+        [JsonIgnore]
+        public DateTimeOffset CreatedAt { get; internal set; }
+
+        [JsonIgnore]
+        public string Mention { get { return $"<@{this.Id}>"; } }
     }
 
     public sealed class DiscordPresence
@@ -316,14 +322,21 @@ namespace SlothCord
 
     public sealed class DiscordGuild : GuildMethods
     {
+        public async Task LeaveAsync() => await base.LeaveGuildAsync(this.Id);
+
         public async Task<DiscordChannel> GetChannelAsync(ulong channel_id)
         {
             return await base.GetGuildChannelAsync(this.Id, channel_id);
         }
 
-        public async Task<IEnumerable<DiscordGuildMember>> GetMembersAsync()
+        public async Task<DiscordGuildMember> GetMemberAsync(ulong user_id)
         {
-            return await base.ListGuildMembersAsync(this.Id);
+            return await base.ListGuildMemberAsync(this.Id, user_id);
+        }
+
+        public async Task<IEnumerable<DiscordGuildMember>> GetMembersAsync(int limit = 100, ulong? around = null)
+        {
+            return await base.ListGuildMembersAsync(this.Id, limit, around);
         }
 
         public async Task BanMemberAsync(DiscordGuildMember member, int clear_days = 0, string reason = null) =>
@@ -412,10 +425,68 @@ namespace SlothCord
 
         [JsonProperty("unavailable")]
         public bool IsUnavailable { get; private set; }
+
+        [JsonIgnore]
+        public DateTimeOffset CreatedAt { get; internal set; }
     }
 
-    public sealed class DiscordGuildMember: UserMethods
+    public sealed class DiscordGuildMember: MemberMethods
     {
+        public async Task ModifyAsync(string nickname, IEnumerable<DiscordRole> roles, bool? is_muted, bool? is_deaf, ulong? channel_id)
+        {
+            if (string.IsNullOrWhiteSpace(nickname))
+                nickname = this.Nickname;
+            if (roles == null)
+                roles = this.Roles as IReadOnlyList<DiscordRole>;
+            if (is_muted == null)
+                is_muted = this.IsMute;
+            if (is_deaf == null)
+                is_deaf = this.IsDeaf;
+            if (channel_id == null)
+                channel_id = this.ChannelId;
+            await base.ModifyAsync(this.GuildId, this.UserData.Id, nickname, roles, is_muted, is_deaf, channel_id);
+        }
+
+        public async Task RemoveRoleAsync(ulong role_id)
+        {
+            var rollist = this.Roles.ToList();
+            var toremove = rollist.FirstOrDefault(x => x.Id == role_id);
+            if (toremove == null)
+                return;
+            rollist.Remove(toremove);
+            await base.ModifyAsync(this.GuildId, this.UserData.Id, this.Nickname, rollist, this.IsMute, this.IsDeaf, this.ChannelId);
+        }
+
+        public async Task GiveRoleAsync(ulong role_id)
+        {
+            var rollist = this.Roles.ToList();
+            var toadd = this.Guild.Roles?.FirstOrDefault(x => x.Id == role_id) ?? null;
+            if (toadd == null)
+                return;
+            rollist.Add(toadd);
+            await base.ModifyAsync(this.GuildId, this.UserData.Id, this.Nickname, rollist, this.IsMute, this.IsDeaf, this.ChannelId);
+        }
+
+        public async Task RemoveRoleAsync(DiscordRole role)
+        {
+            var rollist = this.Roles.ToList();
+            var toremove = rollist.FirstOrDefault(x => x.Id == role.Id);
+            if (toremove == null)
+                return;
+            rollist.Remove(toremove);
+            await base.ModifyAsync(this.GuildId, this.UserData.Id, this.Nickname, rollist, this.IsMute, this.IsDeaf, this.ChannelId);
+        }
+
+        public async Task GiveRoleAsync(DiscordRole role)
+        {
+            var rollist = this.Roles.ToList();
+            var toadd = this.Guild.Roles?.FirstOrDefault(x => x.Id == role.Id) ?? null;
+            if (toadd == null)
+                return;
+            rollist.Add(toadd);
+            await base.ModifyAsync(this.GuildId, this.UserData.Id, this.Nickname, rollist, this.IsMute, this.IsDeaf, this.ChannelId);
+        }
+
         public async Task<DiscordMessage> SendMessageAsync(string content = null, DiscordEmbed embed = null)
         {
             var channel = await base.CreateUserDmChannelAsync(this.UserData.Id);
@@ -430,10 +501,19 @@ namespace SlothCord
         public DiscordUser UserData { get; internal set; }
 
         [JsonProperty("mute")]
-        public bool IsMute { get; private set; }
+        public bool IsMute { get; internal set; }
 
         [JsonProperty("deaf")]
-        public bool IsDeaf { get; private set; }
+        public bool IsDeaf { get; internal set; }
+
+        [JsonIgnore]
+        public bool? IsMutedByCurrentUser { get; internal set; }
+
+        [JsonIgnore]
+        public bool? IsSelfMute { get; internal set; }
+
+        [JsonIgnore]
+        public bool? IsSelfDeaf { get; internal set; }
 
         [JsonProperty("nick")]
         public string Nickname { get; internal set; }
@@ -445,7 +525,19 @@ namespace SlothCord
         internal IEnumerable<ulong> RoleIds { get; set; }
 
         [JsonIgnore]
+        public DiscordGuild Guild { get; internal set; }
+
+        [JsonIgnore]
+        public ulong GuildId { get; internal set; }
+
+        [JsonIgnore]
+        public ulong ChannelId { get; internal set; }
+
+        [JsonIgnore]
         public IReadOnlyList<DiscordRole> Roles { get; internal set; }
+
+        [JsonIgnore]
+        public string Mention { get { return $"<@{this.UserData.Id}>"; } }
     }
 
     public sealed class DiscordEmoji { }
@@ -468,8 +560,8 @@ namespace SlothCord
         public bool IsHoisted { get; private set; }
         [JsonProperty("color")]
         private int IntColorValue { get; set; }
-       // [JsonIgnore]
-        //public Color Color { get { return this.Color; } private set { this.Color = Color.FromArgb(this.IntColorValue); } }
+        [JsonIgnore]
+        public string Mention { get { return $"<&{this.Id}>"; } }
     }
 
     public sealed class DiscordChannel : ChannelMethods

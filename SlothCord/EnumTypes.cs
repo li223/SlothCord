@@ -79,11 +79,12 @@ namespace SlothCord
         DND = 4
     }
 
-    public enum PlayingType
+    public enum PlayingType : int
     {
         Playing = 0,
-        Watching = 1,
-        Listening = 2
+        Streaming = 1,
+        Listening = 2,
+        Watching = 3
     }
 
     public enum MessageType

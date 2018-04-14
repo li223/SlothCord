@@ -83,7 +83,7 @@ namespace SlothCord
         [JsonProperty("user")]
         public DiscordUser User { get; private set; }
         [JsonProperty("status")]
-        public string Status { get; private set; }
+        public StatusType Status { get; private set; }
         [JsonProperty("roles")]
         public IReadOnlyList<ulong> RoleIds { get; private set; }
         [JsonProperty("nick")]
@@ -92,6 +92,28 @@ namespace SlothCord
         public ulong GuildId { get; private set; }
         [JsonProperty("game", NullValueHandling = NullValueHandling.Ignore)]
         public DiscordGame Game { get; private set; }
+    }
+
+    internal class VoiceStateUpdatePaylod
+    {
+        [JsonProperty("guild_id", NullValueHandling = NullValueHandling.Ignore)]
+        public ulong? GuildId { get; set; }
+        [JsonProperty("channel_id", NullValueHandling = NullValueHandling.Ignore)]
+        public ulong? ChannelId { get; set; }
+        [JsonProperty("user_id")]
+        public ulong UserId { get; set; }
+        [JsonProperty("session_id")]
+        public ulong SessionId { get; set; }
+        [JsonProperty("deaf")]
+        public bool IsDeaf { get; set; }
+        [JsonProperty("mute")]
+        public bool IsMute { get; set; }
+        [JsonProperty("self_deaf")]
+        public bool IsSelfDeaf { get; set; }
+        [JsonProperty("self_mute")]
+        public bool IsSelfMute { get; set; }
+        [JsonProperty("suppress")]
+        public bool IsMutedByCurrentUser { get; set; }
     }
 
     internal class ResumePayload
@@ -141,6 +163,20 @@ namespace SlothCord
     {
         [JsonProperty("messages")]
         public ulong[] Messages { get; set; }
+    }
+
+    internal class MemberModifyPayload
+    {
+        [JsonProperty("nick")]
+        public string Nickname { get; set; }
+        [JsonProperty("roles")]
+        public IEnumerable<DiscordRole> Roles { get; set; }
+        [JsonProperty("mute" , NullValueHandling = NullValueHandling.Ignore)]
+        public bool? IsMute { get; set; }
+        [JsonProperty("deaf", NullValueHandling = NullValueHandling.Ignore)]
+        public bool? IsDeaf { get; set; }
+        [JsonProperty("channel_id", NullValueHandling = NullValueHandling.Ignore)]
+        public ulong? ChannelId { get; set; }
     }
 
     internal class Properties
