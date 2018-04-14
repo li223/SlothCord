@@ -136,7 +136,7 @@ namespace SlothCord.Commands
         internal async Task ExecuteCommandAsync(DiscordClient client, DiscordMessage msg, List<object> Args, SlothUserCommand cmd)
         {
             if (cmd.Method.HasAttribute<RequireOwnerAttribute>() && (msg.Author.Id != client.CurrentUser.Id)) return;
-            if(!AllowDmCommands && !client.Guilds.Any(x => x.Id == msg.ChannelId)) return;
+            if(!AllowDmCommands && !client.Guilds.Any(x => x.Channels.Any(a => a.Id == msg.ChannelId))) return;
 
             var guild = client.Guilds.FirstOrDefault(x => x.Channels.Any(a => a.Id == msg.ChannelId));
             var channel = guild.Channels.FirstOrDefault(x => x.Id == msg.ChannelId);
