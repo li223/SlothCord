@@ -135,13 +135,9 @@ namespace SlothCord.Commands
         
         internal async Task ExecuteCommandAsync(DiscordClient client, DiscordMessage msg, List<object> Args, SlothUserCommand cmd)
         {
-            if (cmd.Method.HasAttribute<RequireOwnerAttribute>())
-            {
-                if (msg.Author.Id != client.CurrentUser.Id)
-                {
-                    return;
-                }
-            }
+            if (cmd.Method.HasAttribute<RequireOwnerAttribute>() && (msg.Author.Id != client.CurrentUser.Id)) return;
+            if(!AllowDmCommands && !client.Guilds.Any(x => x.Id == msg.ChannelId)) return;
+
             var guild = client.Guilds.FirstOrDefault(x => x.Channels.Any(a => a.Id == msg.ChannelId));
             var channel = guild.Channels.FirstOrDefault(x => x.Id == msg.ChannelId);
             var member = guild.Members.FirstOrDefault(x => x.UserData.Id == msg.Author.Id);
@@ -223,7 +219,7 @@ namespace SlothCord.Commands
             return;
         }
     }
-            
+
     public class SlothCommandContext : ApiBase
     {
         public IServiceProvider Services { get; internal set; }
