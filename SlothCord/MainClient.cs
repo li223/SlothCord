@@ -308,8 +308,11 @@ namespace SlothCord
                                         var guild = JsonConvert.DeserializeObject<DiscordGuild>(data.EventPayload.ToString());
                                         foreach (var member in guild.Members)
                                         {
-                                            member.Roles = member.RoleIds.Select(x => guild.Roles.FirstOrDefault(a => a.Id == x)) as IReadOnlyList<DiscordRole>;
-                                            member.GuildId = guild.Id;
+
+                                            var roles = new List<DiscordRole>();
+                                            foreach (var id in member.RoleIds)
+                                                roles.Add(guild.Roles.FirstOrDefault(x => x.Id == id));
+                                            member.Roles = roles; member.GuildId = guild.Id;
                                             member.Guild = guild;
                                         }
                                         AvailableGuilds.Add(guild);
@@ -348,12 +351,12 @@ namespace SlothCord
                                             foreach (var id in member.RoleIds)
                                                 roles.Add(guild.Roles.FirstOrDefault(x => x.Id == id));
                                             member.Roles = roles;
-                                            member.UserData.Game = pl.Game;
+                                            member.UserData.Activity = pl.Activity;
                                         }
                                         else
                                         {
                                             user = pl.User;
-                                            user.Game = pl.Game;
+                                            user.Activity = pl.Activity;
                                         }
                                         args.MemberAfter = member;
                                         PresenceUpdated?.Invoke(this, args);
@@ -529,8 +532,12 @@ namespace SlothCord
                                             var member = guild.Members.FirstOrDefault(x => x.UserData.Id == pl.UserId);
                                             if (member != null)
                                             {
+                                                var roles = new List<DiscordRole>();
+                                                foreach (var id in member.RoleIds)
+                                                    roles.Add(guild.Roles.FirstOrDefault(x => x.Id == id));
+                                                member.Roles = roles;
                                                 member.Guild = guild;
-                                                member.ChannelId = (ulong)pl.ChannelId;
+                                                member.ChannelId = pl.ChannelId ?? null;
                                                 member.IsDeaf = pl.IsDeaf;
                                                 member.IsMute = pl.IsMute;
                                                 member.IsSelfDeaf = pl.IsSelfDeaf;
@@ -692,7 +699,7 @@ namespace SlothCord
             else return null;
         }
 
-        public async Task<DiscordGuild> CreateGuildAsync(string name, string region, string icon_file_path, VerificationLevel verificationLevel, NotificationLevel notificationLevel, ExplicitContentFilterLevel explicitContentFilter, ICollection<DiscordRole> roles, ICollection<DiscordChannel> channels)
+        public async Task<DiscordGuild> CreateGuildAsync(string name, string region, string icon_file_path, VerificationLevel verificationLevel, NotificationLevel notificationLevel, ExplicitContentFilterLevel explicitContentFilter, IEnumerable<DiscordRole> roles, IEnumerable<DiscordChannel> channels)
         {
             var guild = new DiscordGuild()
             {
@@ -717,6 +724,14 @@ namespace SlothCord
         protected internal static HttpClient _httpClient = new HttpClient();
         protected internal static WebSocket WebSocketClient { get; set; }
         protected internal static Uri _baseAddress = new Uri("https://discordapp.com/api/v6");
+
+        protected internal async Task<string> RetryAsync(long retry_in, HttpRequestMessage msg)
+        {
+            await Task.Delay(new TimeSpan(retry_in));
+            var response = await _httpClient.SendAsync(msg);
+            var content = await response.Content.ReadAsStringAsync();
+            return content;
+        }
     }
 
     public class MessageMethods : ApiBase
@@ -735,26 +750,33 @@ namespace SlothCord
                 Content = content,
                 Embed = embed
             };
-            var response = await _httpClient.PutAsync(new Uri($"{_baseAddress}/channels/{channel_id}/messages/{message_id}"), new StringContent(JsonConvert.SerializeObject(obj)));
+            var msg = new HttpRequestMessage(HttpMethod.Put, new Uri($"{_baseAddress}/channels/{channel_id}/messages/{message_id}"))
+            {
+                Content = new StringContent(JsonConvert.SerializeObject(obj))
+            };
+            var response = await _httpClient.SendAsync(msg);
             var rescont = await response.Content.ReadAsStringAsync();
             if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordMessage>(rescont);
             else
             {
-                HttpError?.Invoke(this, rescont);
-                return null;
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
+                    return JsonConvert.DeserializeObject<DiscordMessage>(await RetryAsync(response.Headers.RetryAfter.Date.Value.UtcTicks, msg));
+                else
+                {
+                    HttpError?.Invoke(this, rescont);
+                    return null;
+                }
             }
         }
 
-        internal async Task<DiscordMessage> DeleteMessageAsync(ulong channel_id, ulong message_id)
+        internal async Task DeleteMessageAsync(ulong channel_id, ulong message_id)
         {
-            var response = await _httpClient.DeleteAsync(new Uri($"{_baseAddress}/channels/{channel_id}/messages/{message_id}"));
+            var msg = new HttpRequestMessage(HttpMethod.Delete, new Uri($"{_baseAddress}/channels/{channel_id}/messages/{message_id}"));
+            var response = await _httpClient.SendAsync(msg);
             var content = await response.Content.ReadAsStringAsync();
-            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordMessage>(content);
-            else
-            {
-                HttpError?.Invoke(this, content);
-                return null;
-            }
+            if (!response.IsSuccessStatusCode)
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
+                    await RetryAsync(response.Headers.RetryAfter.Date.Value.UtcTicks, msg);
         }
     }
 
@@ -764,10 +786,13 @@ namespace SlothCord
 
         internal async Task LeaveGuildAsync(ulong guild_id)
         {
-            var response = await _httpClient.DeleteAsync(new Uri($"{_baseAddress}/users/@me/guilds/{guild_id}"));
+            var msg = new HttpRequestMessage(HttpMethod.Delete, new Uri($"{_baseAddress}/users/@me/guilds/{guild_id}"));
+            var response = await _httpClient.SendAsync(msg);
             var content = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
-                HttpError?.Invoke(this, content);
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
+                    await RetryAsync(response.Headers.RetryAfter.Date.Value.UtcTicks, msg);
+                else HttpError?.Invoke(this, content);
         }
 
         internal async Task CreateBanAsync(ulong guild_id, ulong member_id, int clear_days = 0, string reason = null)
@@ -781,7 +806,9 @@ namespace SlothCord
             var response = await _httpClient.SendAsync(request);
             var content = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
-                HttpError?.Invoke(this, content);
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
+                    await RetryAsync(response.Headers.RetryAfter.Date.Value.UtcTicks, request);
+                else HttpError?.Invoke(this, content);
         }
 
         internal async Task<IEnumerable<DiscordGuildMember>> ListGuildMembersAsync(ulong guild_id, int limit = 100, ulong? around = null)
@@ -789,7 +816,8 @@ namespace SlothCord
             var requeststring = $"{_baseAddress}/guilds/{guild_id}/members?limit={limit}";
             if (around != null)
                 requeststring += $"&around={around}";
-            var response = await _httpClient.GetAsync(new Uri(requeststring));
+            var msg = new HttpRequestMessage(HttpMethod.Get, new Uri(requeststring));
+            var response = await _httpClient.SendAsync(msg);
             var content = await response.Content.ReadAsStringAsync();
             if (response.IsSuccessStatusCode)
             {
@@ -799,6 +827,8 @@ namespace SlothCord
             }
             else
             {
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
+                    return JsonConvert.DeserializeObject<IEnumerable<DiscordGuildMember>>(await RetryAsync(response.Headers.RetryAfter.Date.Value.UtcTicks, msg));
                 HttpError?.Invoke(this, content);
                 return null;
             }
@@ -806,7 +836,8 @@ namespace SlothCord
 
         internal async Task<DiscordGuildMember> ListGuildMemberAsync(ulong guild_id, ulong member_id)
         {
-            var response = await _httpClient.GetAsync(new Uri($"{_baseAddress}/guilds/{guild_id}/members/{member_id}"));
+            var msg = new HttpRequestMessage(HttpMethod.Get, new Uri($"{_baseAddress}/guilds/{guild_id}/members/{member_id}"));
+            var response = await _httpClient.SendAsync(msg);
             var content = await response.Content.ReadAsStringAsync();
             if (response.IsSuccessStatusCode)
             {
@@ -816,13 +847,16 @@ namespace SlothCord
             }
             else
             {
-                return null;
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
+                    return JsonConvert.DeserializeObject<DiscordGuildMember>(await RetryAsync(response.Headers.RetryAfter.Date.Value.UtcTicks, msg));
+                else return null;
             }
         }
 
         internal async Task<DiscordChannel> GetGuildChannelAsync(ulong guild_id, ulong channel_id)
         {
-            var response = await _httpClient.GetAsync(new Uri($"{_baseAddress}/channels/{channel_id}"));
+            var msg = new HttpRequestMessage(HttpMethod.Get, new Uri($"{_baseAddress}/channels/{channel_id}"));
+            var response = await _httpClient.SendAsync(msg);
             var content = await response.Content.ReadAsStringAsync();
             if (response.IsSuccessStatusCode)
             {
@@ -832,8 +866,9 @@ namespace SlothCord
             }
             else
             {
-                HttpError?.Invoke(this, content);
-                return null;
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
+                    return JsonConvert.DeserializeObject<DiscordChannel>(await RetryAsync(response.Headers.RetryAfter.Date.Value.UtcTicks, msg));
+                else return null;
             }
         }
     }
@@ -842,16 +877,24 @@ namespace SlothCord
     {
         public event OnHttpError HttpError;
 
+        internal async Task DeleteChannelMessageAsync(ulong channel_id, ulong message_id)
+        {
+            var msg = new HttpRequestMessage(HttpMethod.Delete, new Uri($"{_baseAddress}/channels/{channel_id}/messages/{message_id}"));
+            var response = await _httpClient.SendAsync(msg);
+            if (!response.IsSuccessStatusCode)
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
+                    await RetryAsync(response.Headers.RetryAfter.Date.Value.UtcTicks, msg);
+            }
+
         internal async Task<DiscordInvite> DeleteDiscordInviteAsync(string code, int? with_counts = null)
         {
-            var response = await _httpClient.DeleteAsync(new Uri($"{_baseAddress}/invites/{code}"));
+            var msg = new HttpRequestMessage(HttpMethod.Delete, new Uri($"{_baseAddress}/invites/{code}"));
+            var response = await _httpClient.SendAsync(msg);
             var content = await response.Content.ReadAsStringAsync();
-            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordInvite>(content);
-            else
-            {
-                HttpError?.Invoke(this, content);
-                return null;
-            }
+            if (!response.IsSuccessStatusCode)
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) { return JsonConvert.DeserializeObject<DiscordInvite>(await RetryAsync(response.Headers.RetryAfter.Date.Value.UtcTicks, msg)); }
+                else { return null; }
+            else return JsonConvert.DeserializeObject<DiscordInvite>(content);
         }
 
         internal async Task<DiscordInvite> GetDiscordInviteAsync(string code, int? with_counts = null)
@@ -859,24 +902,29 @@ namespace SlothCord
             var query = $"{_baseAddress}/invites/{code}";
             if (with_counts != null)
                 query += $"/with_counts/{with_counts}";
-            var response = await _httpClient.GetAsync(new Uri(query));
+            var msg = new HttpRequestMessage(HttpMethod.Get, new Uri(query));
+            var response = await _httpClient.SendAsync(msg);
             var content = await response.Content.ReadAsStringAsync();
-            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordInvite>(content);
-            else
-            {
-                HttpError?.Invoke(this, content);
-                return null;
-            }
+            if (!response.IsSuccessStatusCode)
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) { return JsonConvert.DeserializeObject<DiscordInvite>(await RetryAsync(response.Headers.RetryAfter.Date.Value.UtcTicks, msg)); }
+                else { return null; }
+            else return JsonConvert.DeserializeObject<DiscordInvite>(content);
         }
 
-        internal async Task BulkDeleteGuildMessagesAsync(ulong? guild_id, ulong channel_id, ICollection<ulong> message_ids)
+        internal async Task BulkDeleteGuildMessagesAsync(ulong? guild_id, ulong channel_id, IEnumerable<ulong> message_ids)
         {
             if (guild_id == null) return;
-            var msgs = new BulkDeletePayload()
+            var ids = new BulkDeletePayload()
             {
                 Messages = message_ids.ToArray()
             };
-            var response = await _httpClient.PostAsync(new Uri($"{_baseAddress}/channels{channel_id}/messages/bulk-delete"), new StringContent(JsonConvert.SerializeObject(msgs)));
+            var msg = new HttpRequestMessage(HttpMethod.Post, new Uri($"{_baseAddress}/channels{channel_id}/messages/bulk-delete"))
+            {
+                Content = new StringContent(JsonConvert.SerializeObject(ids))
+            };
+            var response = await _httpClient.SendAsync(msg);
+            if (!response.IsSuccessStatusCode)
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) { await RetryAsync(response.Headers.RetryAfter.Date.Value.UtcTicks, msg); }
         }
 
         internal async Task<IEnumerable<DiscordMessage>> GetMultipleMessagesAsync(ulong channel_id, int limit = 50, ulong? around = null, ulong? after = null, ulong? before = null)
@@ -990,5 +1038,12 @@ namespace SlothCord
             if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordChannel>(content);
             else return null;
         }
+    }
+
+    public struct Request
+    {
+        HttpMethod Method { get; set; }
+        HttpRequestMessage RequestMessage { get; set; }
+        string Endpoint { get; set; }
     }
 }

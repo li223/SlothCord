@@ -133,10 +133,10 @@ namespace SlothCord.Commands
             }
         }
         
-        internal async Task ExecuteCommandAsync(DiscordClient client, DiscordMessage msg, List<object> Args, SlothUserCommand cmd)
+        internal Task ExecuteCommandAsync(DiscordClient client, DiscordMessage msg, List<object> Args, SlothUserCommand cmd)
         {
-            if (cmd.Method.HasAttribute<RequireOwnerAttribute>() && (msg.Author.Id != client.CurrentUser.Id)) return;
-            if(!AllowDmCommands && !client.Guilds.Any(x => x.Channels.Any(a => a.Id == msg.ChannelId))) return;
+            if (cmd.Method.HasAttribute<RequireOwnerAttribute>() && (msg.Author.Id != client.CurrentUser.Id)) return Task.CompletedTask;
+            if(!AllowDmCommands && !client.Guilds.Any(x => x.Channels.Any(a => a.Id == msg.ChannelId))) return Task.CompletedTask;
 
             var guild = client.Guilds.FirstOrDefault(x => x.Channels.Any(a => a.Id == msg.ChannelId));
             var channel = guild.Channels.FirstOrDefault(x => x.Id == msg.ChannelId);
@@ -144,6 +144,7 @@ namespace SlothCord.Commands
             member.Roles = member.RoleIds.Select(x => guild.Roles.FirstOrDefault(a => a.Id == x)) as IReadOnlyList<DiscordRole>;
             var context = new SlothCommandContext()
             {
+                Message = msg,
                 Channel = channel,
                 Guild = guild,
                 User = msg.Author,
@@ -151,19 +152,10 @@ namespace SlothCord.Commands
                 Member = member,
                 Services = this.Services
             };
-            /*
-            if (cmd.Method.HasAttribute<PreExecutionCheckAttribute>())
-            {
-                var att = cmd.Method.GetCustomAttribute<PreExecutionCheckAttribute>();
-                switch (await att.PreCheckAsync(context))
-                {
-                    case true:
-                        break;
-                    case false:
-                        return;
-                }
-            }
-            */
+            var roles = new List<DiscordRole>();
+            foreach (var id in member.RoleIds)
+                roles.Add(guild.Roles.FirstOrDefault(x => x.Id == id));
+            member.Roles = roles;
             var passargs = new List<object>();
             int pos = 0;
             var countval = cmd.Parameters.Count();
@@ -175,7 +167,9 @@ namespace SlothCord.Commands
             }
             for (var i = 0; i < countval; i++)
             {
-                object currentarg = Args[i];
+                object currentarg = null;
+                if(Args.Count > 0)
+                    currentarg = Args[i];
                 var check = cmd.Parameters[pos].CustomAttributes.Any(y => y.AttributeType == typeof(RemainingStringAttribute));
                 if (check)
                 {
@@ -206,7 +200,7 @@ namespace SlothCord.Commands
             }
             try
             {
-                cmd.Method.Invoke(cmd.ClassInstance, passargs.ToArray());
+                var result = cmd.Method.Invoke(cmd.ClassInstance, passargs.ToArray());
             }
             catch (TargetParameterCountException)
             {
@@ -216,13 +210,14 @@ namespace SlothCord.Commands
             {
                 CommandErrored?.Invoke(this, ex.Message);
             }
-            return;
+            return Task.CompletedTask;
         }
     }
 
     public class SlothCommandContext : ApiBase
     {
         public IServiceProvider Services { get; internal set; }
+        public DiscordMessage Message { get; internal set; }
         public DiscordGuild Guild { get; internal set; }
         public DiscordChannel Channel { get; internal set; }
         public DiscordUser User { get; internal set; }
@@ -299,15 +294,6 @@ namespace SlothCord.Commands
 
     [AttributeUsage(AttributeTargets.Method)]
     public class RequireOwnerAttribute : Attribute { }
-
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
-    public class PreExecutionCheckAttribute : Attribute
-    { 
-        public virtual Task<bool> PreCheckAsync(SlothCommandContext ctx)
-        {
-            return Task.FromResult(true);
-        }
-    }
 
     public static class Extensions
     {

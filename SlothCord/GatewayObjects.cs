@@ -91,7 +91,7 @@ namespace SlothCord
         [JsonProperty("guild_id")]
         public ulong GuildId { get; private set; }
         [JsonProperty("game", NullValueHandling = NullValueHandling.Ignore)]
-        public DiscordGame Game { get; private set; }
+        public DiscordActivity Activity { get; private set; }
     }
 
     internal class VoiceStateUpdatePaylod
@@ -103,7 +103,7 @@ namespace SlothCord
         [JsonProperty("user_id")]
         public ulong UserId { get; set; }
         [JsonProperty("session_id")]
-        public ulong SessionId { get; set; }
+        public string SessionId { get; set; }
         [JsonProperty("deaf")]
         public bool IsDeaf { get; set; }
         [JsonProperty("mute")]
