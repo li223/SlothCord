@@ -1,8 +1,6 @@
-﻿using System;
+using SlothCord.Objects;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SlothCord
 {
@@ -11,7 +9,7 @@ namespace SlothCord
     public delegate void OnMessageUpdate(object sender, DiscordMessage b, DiscordMessage a);
     public delegate void OnChannelEvent(object sender, DiscordChannel e);
     public delegate void OnTypingStart(object sender, TypingStartArgs e);
-    public delegate void OnCommandError(object sender, string e);
+    public delegate void OnCommandError(object sender, CommandErroredArgs e);
     public delegate void OnGuildsDownloaded(object sender, IEnumerable<DiscordGuild> e);
     public delegate void OnMessageCreate(object sender, DiscordMessage e);
     public delegate void OnGuildAvailable(object sender, DiscordGuild e);
@@ -22,6 +20,14 @@ namespace SlothCord
     public delegate void OnClientError(object sender, ClientErroredArgs e);
     public delegate void OnSocketDataReceived(object sender, string e);
     public delegate void OnPresenceUpdate(object sender, PresenceUpdateArgs e);
+
+    public class CommandErroredArgs : EventArgs
+    {
+        public DiscordChannel Channel;
+        public DiscordGuild Guild;
+        public Exception Exception;
+        public string Message;
+    }
 
     public class TypingStartArgs : EventArgs
     {
