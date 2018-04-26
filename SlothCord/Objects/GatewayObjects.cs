@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace SlothCord
+namespace SlothCord.Objects
 {
     internal class HttpPayload
     {
