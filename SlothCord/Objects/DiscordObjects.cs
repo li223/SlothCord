@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Drawing;
 
-namespace SlothCord
+namespace SlothCord.Objects
 {
     public sealed class DiscordUser : UserMethods
     {
