@@ -1,15 +1,13 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SlothCord.Commands;
-using SuperSocket.ClientEngine;
+using SlothCord.Objects;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Reflection;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using WebSocket4Net;
 
@@ -146,7 +144,7 @@ namespace SlothCord
                 WebSocketClient = new WebSocket(jobj.WSUrl);
                 WebSocketClient.MessageReceived += WebSocketClient_MessageReceived;
                 WebSocketClient.Closed += WebSocketClient_Closed;
-                await WebSocketClient.OpenAsync();
+                await WebsocketClient.OpenAsync();
             }
             else
             {
@@ -220,7 +218,7 @@ namespace SlothCord
                 Console.ForegroundColor = ConsoleColor.White;
             }
             SocketClosed?.Invoke(this, e);
-            await WebSocketClient.OpenAsync();
+            WebSocketClient.Open();
         }
 
         private void WebSocketClient_Error(object sender, SuperSocket.ClientEngine.ErrorEventArgs e)
@@ -594,7 +592,7 @@ namespace SlothCord
                             Console.ForegroundColor = ConsoleColor.White;
                         }
                         await WebSocketClient.CloseAsync();
-                        await WebSocketClient.OpenAsync();
+                        await WebsocketClient.OpenAsync();
                         var tsk = new Task(SendHeartbeats);
                         tsk.Start();
                         break;
@@ -705,7 +703,7 @@ namespace SlothCord
             {
                 Name = name,
                 Region = region,
-                IconUrl = Convert.ToBase64String(await File.ReadAllBytesAsync(icon_file_path)),
+                IconUrl = Convert.ToBase64String(File.ReadAllBytes(icon_file_path)),
                 VerificationLevel = verificationLevel,
                 DefaultMessageNotifications = notificationLevel,
                 ExplicitContentFilter = explicitContentFilter,
@@ -725,9 +723,12 @@ namespace SlothCord
         protected internal static WebSocket WebSocketClient { get; set; }
         protected internal static Uri _baseAddress = new Uri("https://discordapp.com/api/v6");
 
-        protected internal async Task<string> RetryAsync(long retry_in, HttpRequestMessage msg)
+        internal async Task<string> RetryAsync(int retry_in, HttpRequestMessage msg)
         {
-            await Task.Delay(new TimeSpan(retry_in));
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Gateway Ratelimit Reached, waiting {retry_in}ms");
+            Console.ForegroundColor = ConsoleColor.White;
+            await Task.Delay(retry_in);
             var response = await _httpClient.SendAsync(msg);
             var content = await response.Content.ReadAsStringAsync();
             return content;
@@ -760,7 +761,7 @@ namespace SlothCord
             else
             {
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
-                    return JsonConvert.DeserializeObject<DiscordMessage>(await RetryAsync(response.Headers.RetryAfter.Date.Value.UtcTicks, msg));
+                    return JsonConvert.DeserializeObject<DiscordMessage>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg));
                 else
                 {
                     HttpError?.Invoke(this, rescont);
@@ -776,7 +777,7 @@ namespace SlothCord
             var content = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
-                    await RetryAsync(response.Headers.RetryAfter.Date.Value.UtcTicks, msg);
+                    await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg);
         }
     }
 
@@ -791,7 +792,7 @@ namespace SlothCord
             var content = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
-                    await RetryAsync(response.Headers.RetryAfter.Date.Value.UtcTicks, msg);
+                    await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg);
                 else HttpError?.Invoke(this, content);
         }
 
@@ -807,7 +808,7 @@ namespace SlothCord
             var content = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
-                    await RetryAsync(response.Headers.RetryAfter.Date.Value.UtcTicks, request);
+                    await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), request);
                 else HttpError?.Invoke(this, content);
         }
 
@@ -828,7 +829,7 @@ namespace SlothCord
             else
             {
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
-                    return JsonConvert.DeserializeObject<IEnumerable<DiscordGuildMember>>(await RetryAsync(response.Headers.RetryAfter.Date.Value.UtcTicks, msg));
+                    return JsonConvert.DeserializeObject<IEnumerable<DiscordGuildMember>>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg));
                 HttpError?.Invoke(this, content);
                 return null;
             }
@@ -848,7 +849,7 @@ namespace SlothCord
             else
             {
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
-                    return JsonConvert.DeserializeObject<DiscordGuildMember>(await RetryAsync(response.Headers.RetryAfter.Date.Value.UtcTicks, msg));
+                    return JsonConvert.DeserializeObject<DiscordGuildMember>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg));
                 else return null;
             }
         }
@@ -867,7 +868,7 @@ namespace SlothCord
             else
             {
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
-                    return JsonConvert.DeserializeObject<DiscordChannel>(await RetryAsync(response.Headers.RetryAfter.Date.Value.UtcTicks, msg));
+                    return JsonConvert.DeserializeObject<DiscordChannel>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg));
                 else return null;
             }
         }
@@ -883,7 +884,7 @@ namespace SlothCord
             var response = await _httpClient.SendAsync(msg);
             if (!response.IsSuccessStatusCode)
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
-                    await RetryAsync(response.Headers.RetryAfter.Date.Value.UtcTicks, msg);
+                    await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg);
             }
 
         internal async Task<DiscordInvite> DeleteDiscordInviteAsync(string code, int? with_counts = null)
@@ -892,7 +893,7 @@ namespace SlothCord
             var response = await _httpClient.SendAsync(msg);
             var content = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
-                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) { return JsonConvert.DeserializeObject<DiscordInvite>(await RetryAsync(response.Headers.RetryAfter.Date.Value.UtcTicks, msg)); }
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) { return JsonConvert.DeserializeObject<DiscordInvite>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg)); }
                 else { return null; }
             else return JsonConvert.DeserializeObject<DiscordInvite>(content);
         }
@@ -906,7 +907,7 @@ namespace SlothCord
             var response = await _httpClient.SendAsync(msg);
             var content = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
-                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) { return JsonConvert.DeserializeObject<DiscordInvite>(await RetryAsync(response.Headers.RetryAfter.Date.Value.UtcTicks, msg)); }
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) { return JsonConvert.DeserializeObject<DiscordInvite>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg)); }
                 else { return null; }
             else return JsonConvert.DeserializeObject<DiscordInvite>(content);
         }
@@ -924,7 +925,7 @@ namespace SlothCord
             };
             var response = await _httpClient.SendAsync(msg);
             if (!response.IsSuccessStatusCode)
-                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) { await RetryAsync(response.Headers.RetryAfter.Date.Value.UtcTicks, msg); }
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) { await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg); }
         }
 
         internal async Task<IEnumerable<DiscordMessage>> GetMultipleMessagesAsync(ulong channel_id, int limit = 50, ulong? around = null, ulong? after = null, ulong? before = null)
@@ -993,11 +994,8 @@ namespace SlothCord
             var response = await _httpClient.SendAsync(request);
             var content = await response.Content.ReadAsStringAsync();
             if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordMessage>(content);
-            else
-            {
-                HttpError?.Invoke(this, content);
-                return null;
-            }
+            else if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) return JsonConvert.DeserializeObject<DiscordMessage>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), request));
+            else return null;
         }
     }
 
