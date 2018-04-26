@@ -144,7 +144,7 @@ namespace SlothCord
                 WebSocketClient = new WebSocket(jobj.WSUrl);
                 WebSocketClient.MessageReceived += WebSocketClient_MessageReceived;
                 WebSocketClient.Closed += WebSocketClient_Closed;
-                await WebsocketClient.OpenAsync();
+                await WebSocketClient.OpenAsync();
             }
             else
             {
@@ -218,7 +218,7 @@ namespace SlothCord
                 Console.ForegroundColor = ConsoleColor.White;
             }
             SocketClosed?.Invoke(this, e);
-            WebSocketClient.Open();
+            await WebSocketClient.OpenAsync();
         }
 
         private void WebSocketClient_Error(object sender, SuperSocket.ClientEngine.ErrorEventArgs e)
@@ -592,7 +592,7 @@ namespace SlothCord
                             Console.ForegroundColor = ConsoleColor.White;
                         }
                         await WebSocketClient.CloseAsync();
-                        await WebsocketClient.OpenAsync();
+                        await WebSocketClient.OpenAsync();
                         var tsk = new Task(SendHeartbeats);
                         tsk.Start();
                         break;

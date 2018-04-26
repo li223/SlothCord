@@ -6,6 +6,7 @@ using System.Text;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using SlothCord.Objects;
 
 namespace SlothCord.Commands
 {
@@ -85,6 +86,23 @@ namespace SlothCord.Commands
 
         internal async Task ConvertArgumentsAsync(DiscordClient client, DiscordMessage msg)
         {
+            var guild = client.Guilds.FirstOrDefault(x => x.Channels.Any(a => a.Id == msg.ChannelId));
+            var channel = guild.Channels.FirstOrDefault(x => x.Id == msg.ChannelId);
+            var member = guild.Members.FirstOrDefault(x => x.UserData.Id == msg.Author.Id);
+            var roles = new List<DiscordRole>();
+            foreach (var id in member.RoleIds)
+                roles.Add(guild.Roles.FirstOrDefault(x => x.Id == id));
+            member.Roles = roles;
+            var context = new SlothCommandContext()
+            {
+                Message = msg,
+                Channel = channel,
+                Guild = guild,
+                User = msg.Author,
+                Client = client,
+                Member = member,
+                Services = this.Services
+            };
             List<object> Args = new List<object>();
             Args.AddRange(msg.Content.Replace(this.StringPrefix, "").Split(' ').ToList());
             var group = UserDefinedGroups.FirstOrDefault(x => x.GroupName == (string)Args[0]);
@@ -95,11 +113,17 @@ namespace SlothCord.Commands
                 if(cmd == null) cmd = UserDefinedCommands.FirstOrDefault(x => x.CommandNameAliases?.Any(a => a == (string)Args[0]) ?? false);
                 if (cmd == null)
                 {
-                    CommandErrored?.Invoke(this, "Command does not exist");
+                    CommandErrored?.Invoke(this, new CommandErroredArgs()
+                    {
+                        Message = "Command does not exist",
+                        Channel = context.Channel,
+                        Exception = null,
+                        Guild = context.Guild
+                    });
                     return;
                 }
                 Args.Remove(Args[0]);
-                await ExecuteCommandAsync(client, msg, Args, cmd);
+                await ExecuteCommandAsync(client, msg, Args, cmd, context);
             }
             else
             {
@@ -114,14 +138,26 @@ namespace SlothCord.Commands
                 {
                     if (!group.InvokeWithoutSubCommand)
                     {
-                        CommandErrored?.Invoke(this, "Command does not exist");
+                        CommandErrored?.Invoke(this, new CommandErroredArgs()
+                        {
+                            Message = "Command does not exist",
+                            Channel = context.Channel,
+                            Exception = null,
+                            Guild = context.Guild
+                        });
                         return;
                     }
                     else
                     {
                         if (group.GroupExecuteCommand == null || group.GroupExecuteCommand.Method == null)
                         {
-                            CommandErrored?.Invoke(this, "Command does not exist and no ExecuteAsync method exists");
+                            CommandErrored?.Invoke(this, new CommandErroredArgs()
+                            {
+                                Message = "Command does not exist and no ExecuteAsync method exists",
+                                Channel = context.Channel,
+                                Exception = null,
+                                Guild = context.Guild
+                            });
                             return;
                         }
                         else cmd = group.GroupExecuteCommand;
@@ -129,33 +165,15 @@ namespace SlothCord.Commands
                 }
                 if (cmd != group.GroupExecuteCommand) Args.Remove(Args[0]);
 
-                await ExecuteCommandAsync(client, msg, Args, cmd);
+                await ExecuteCommandAsync(client, msg, Args, cmd, context);
             }
         }
         
-        internal Task ExecuteCommandAsync(DiscordClient client, DiscordMessage msg, List<object> Args, SlothUserCommand cmd)
+        internal Task ExecuteCommandAsync(DiscordClient client, DiscordMessage msg, List<object> Args, SlothUserCommand cmd, SlothCommandContext context)
         {
             if (cmd.Method.HasAttribute<RequireOwnerAttribute>() && (msg.Author.Id != client.CurrentUser.Id)) return Task.CompletedTask;
             if(!AllowDmCommands && !client.Guilds.Any(x => x.Channels.Any(a => a.Id == msg.ChannelId))) return Task.CompletedTask;
 
-            var guild = client.Guilds.FirstOrDefault(x => x.Channels.Any(a => a.Id == msg.ChannelId));
-            var channel = guild.Channels.FirstOrDefault(x => x.Id == msg.ChannelId);
-            var member = guild.Members.FirstOrDefault(x => x.UserData.Id == msg.Author.Id);
-            member.Roles = member.RoleIds.Select(x => guild.Roles.FirstOrDefault(a => a.Id == x)) as IReadOnlyList<DiscordRole>;
-            var context = new SlothCommandContext()
-            {
-                Message = msg,
-                Channel = channel,
-                Guild = guild,
-                User = msg.Author,
-                Client = client,
-                Member = member,
-                Services = this.Services
-            };
-            var roles = new List<DiscordRole>();
-            foreach (var id in member.RoleIds)
-                roles.Add(guild.Roles.FirstOrDefault(x => x.Id == id));
-            member.Roles = roles;
             var passargs = new List<object>();
             int pos = 0;
             var countval = cmd.Parameters.Count();
@@ -187,7 +205,7 @@ namespace SlothCord.Commands
                         var strid = new Regex(@"((<@)(?:!))").Replace(Args[i] as string, "").Replace(">", "");
                         var id = ulong.Parse(strid);
                         var cachedUser = client.InternalUserCache?.FirstOrDefault(x => x.Id == id);
-                        if (member != null && currentarg.GetType() == typeof(DiscordGuildMember)) currentarg = member;
+                        if (context.Member != null && currentarg.GetType() == typeof(DiscordGuildMember)) currentarg = context.Member;
                         else if (cachedUser != null) currentarg = cachedUser;
                     }
                     else
@@ -204,11 +222,23 @@ namespace SlothCord.Commands
             }
             catch (TargetParameterCountException)
             {
-                CommandErrored?.Invoke(this, "Required parameter does not have a value");
+                CommandErrored?.Invoke(this, new CommandErroredArgs()
+                {
+                    Message = "Required parameter does not have a value",
+                    Channel = context.Channel,
+                    Exception = null,
+                    Guild = context.Guild
+                });
             }
             catch(Exception ex)
             {
-                CommandErrored?.Invoke(this, ex.Message);
+                CommandErrored?.Invoke(this, new CommandErroredArgs()
+                {
+                    Message = ex.Message,
+                    Channel = context.Channel,
+                    Exception = ex,
+                    Guild = context.Guild
+                });
             }
             return Task.CompletedTask;
         }
