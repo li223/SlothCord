@@ -537,28 +537,28 @@ namespace SlothCord.Objects
 
         public async Task GiveRoleAsync(ulong role_id)
         {
-            var rollist = this.Roles.ToList();
-            var toadd = this.Guild.Roles?.FirstOrDefault(x => x.Id == role_id) ?? null;
+            var rolelist = this.Roles.ToList();
+            var toadd = this.Guild.Roles?.FirstOrDefault(x => x.Id == role_id);
             if (toadd == null)
                 return;
             rollist.Add(toadd);
-            await base.ModifyAsync(this.GuildId, this.UserData.Id, this.Nickname, rollist, this.IsMute, this.IsDeaf, this.ChannelId);
+            await base.ModifyAsync(this.GuildId, this.UserData.Id, this.Nickname, rolelist, this.IsMute, this.IsDeaf, this.ChannelId);
         }
 
         public async Task RemoveRoleAsync(DiscordRole role)
         {
-            var rollist = this.Roles.ToList();
+            var rolelist = this.Roles.ToList();
             var toremove = rollist.FirstOrDefault(x => x.Id == role.Id);
             if (toremove == null)
                 return;
             rollist.Remove(toremove);
-            await base.ModifyAsync(this.GuildId, this.UserData.Id, this.Nickname, rollist, this.IsMute, this.IsDeaf, this.ChannelId);
+            await base.ModifyAsync(this.GuildId, this.UserData.Id, this.Nickname, rolelist, this.IsMute, this.IsDeaf, this.ChannelId);
         }
 
         public async Task GiveRoleAsync(DiscordRole role)
         {
             var rollist = this.Roles.ToList();
-            var toadd = this.Guild.Roles?.FirstOrDefault(x => x.Id == role.Id) ?? null;
+            var toadd = this.Guild.Roles?.FirstOrDefault(x => x.Id == role.Id);
             if (toadd == null)
                 return;
             rollist.Add(toadd);
