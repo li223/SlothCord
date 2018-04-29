@@ -53,7 +53,7 @@ namespace SlothCord
         /// Your bot token
         /// </summary>
         public string Token { get; set; }
-        
+
         /// <summary>
         /// The type of token passed
         /// </summary>
@@ -144,7 +144,11 @@ namespace SlothCord
                 WebSocketClient = new WebSocket(jobj.WSUrl);
                 WebSocketClient.MessageReceived += WebSocketClient_MessageReceived;
                 WebSocketClient.Closed += WebSocketClient_Closed;
+#if NETCORE
                 await WebSocketClient.OpenAsync();
+#elif NETFX47
+                WebSocketClient.Open();
+#endif
             }
             else
             {
@@ -180,7 +184,31 @@ namespace SlothCord
             }));
             var pldata = new GatewayPayload()
             {
-                Code = OPCode.Identify,
+                Code = (int)OPCode.Identify,
+                EventPayload = Content
+            };
+            var payload = JsonConvert.SerializeObject(pldata);
+            WebSocketClient.Send(payload);
+            return Task.CompletedTask;
+        }
+
+        private Task SendResumeAsync()
+        {
+            if (LogActions)
+            {
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Gateway SEND RESUME");
+                Console.ForegroundColor = ConsoleColor.White;
+            }
+            var Content = JObject.Parse(JsonConvert.SerializeObject(new ResumePayload()
+            {
+                Token = $"{this.TokenType} {this.Token}",
+                Sequence = _sequence,
+                SessionId = _sessionId
+            }));
+            var pldata = new GatewayPayload()
+            {
+                Code = (int)OPCode.Resume,
                 EventPayload = Content
             };
             var payload = JsonConvert.SerializeObject(pldata);
@@ -217,8 +245,13 @@ namespace SlothCord
                 Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Attempting Reconnect");
                 Console.ForegroundColor = ConsoleColor.White;
             }
-            SocketClosed?.Invoke(this, e);
+            var data = e as OnWebSocketClosedArgs;
+            SocketClosed?.Invoke(this, data);
+#if NETCORE
             await WebSocketClient.OpenAsync();
+#elif NETFX47
+            WebSocketClient.Open();
+#endif
         }
 
         private void WebSocketClient_Error(object sender, SuperSocket.ClientEngine.ErrorEventArgs e)
@@ -245,8 +278,9 @@ namespace SlothCord
                 _sequence = (int)data.Sequence;
             switch (data.Code)
             {
-                case OPCode.Hello:
+                case (int)OPCode.Hello:
                     {
+                        var pl = JsonConvert.DeserializeObject<GatewayHello>(data.EventPayload.ToString());
                         if (LogActions)
                         {
                             Console.ForegroundColor = ConsoleColor.Cyan;
@@ -255,22 +289,29 @@ namespace SlothCord
                         }
                         if (_sessionId == "")
                         {
-                            var pl = JsonConvert.DeserializeObject<GatewayHello>(data.EventPayload.ToString());
                             _heartbeatInterval = pl.HeartbeatInterval;
                             var hbt = new Task(SendHeartbeats, TaskCreationOptions.LongRunning);
                             hbt.Start();
                             await SendIdentifyAsync();
                         }
+                        else
+                        {
+                            await SendResumeAsync();
+                        }
                         break;
                     }
-                case OPCode.Dispatch:
+                case (int)OPCode.Dispatch:
                     {
                         if (LogActions)
                         {
                             Console.ForegroundColor = ConsoleColor.Cyan;
                             Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Gateway DISPATCH");
                         }
+#if NETCORE
                         var obj = Enum.TryParse(typeof(DispatchType), data.EventName, out var res);
+#elif NETFX47
+                        var obj = Enum.TryParse<DispatchType>(data.EventName, out var res);
+#endif
                         if (obj)
                         {
                             switch (Enum.Parse(typeof(DispatchType), data.EventName))
@@ -358,7 +399,7 @@ namespace SlothCord
                                         }
                                         args.MemberAfter = member;
                                         PresenceUpdated?.Invoke(this, args);
-                                        if(this.EnableUserCaching)
+                                        if (this.EnableUserCaching)
                                             if (this.InternalUserCache != null)
                                             {
                                                 var index = this.InternalUserCache.IndexOf(prevmember.UserData);
@@ -477,7 +518,7 @@ namespace SlothCord
                                         var pl = JsonConvert.DeserializeObject<DiscordMessage>(data.EventPayload.ToString());
                                         var prevmsg = this.CachedMessages?.FirstOrDefault(x => x.Id == pl.Id);
                                         MessageUpdate?.Invoke(this, prevmsg, pl);
-                                        if(this.EnableMessageCaching)
+                                        if (this.EnableMessageCaching)
                                             if (this.InternalMessageCache != null)
                                             {
                                                 this.InternalMessageCache[this.InternalMessageCache.IndexOf(prevmsg)] = pl;
@@ -550,7 +591,7 @@ namespace SlothCord
                                         UnknownEvent?.Invoke(this, new UnkownEventArgs()
                                         {
                                             EventName = data.EventName,
-                                            OPCode = ((int)data.Code)
+                                            OPCode = data.Code
                                         });
                                         break;
                                     }
@@ -567,12 +608,12 @@ namespace SlothCord
                             UnknownEvent?.Invoke(this, new UnkownEventArgs()
                             {
                                 EventName = data.EventName,
-                                OPCode = (int)data.Code
+                                OPCode = data.Code
                             });
                         }
                         break;
                     }
-                case OPCode.HeartbeatAck:
+                case (int)OPCode.HeartbeatAck:
                     {
                         if (LogActions)
                         {
@@ -583,7 +624,7 @@ namespace SlothCord
                         Heartbeated?.Invoke(this, "WebSocket Heartbeat Ack");
                         break;
                     }
-                case OPCode.Reconnect:
+                case (int)OPCode.Reconnect:
                     {
                         if (LogActions)
                         {
@@ -591,13 +632,18 @@ namespace SlothCord
                             Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Gateway RECONNECT");
                             Console.ForegroundColor = ConsoleColor.White;
                         }
+#if NETCORE
                         await WebSocketClient.CloseAsync();
                         await WebSocketClient.OpenAsync();
+#elif NETFX47
+                        WebSocketClient.Close();
+                        WebSocketClient.Open();
+#endif
                         var tsk = new Task(SendHeartbeats);
                         tsk.Start();
                         break;
                     }
-                case OPCode.InvalidSession:
+                case (int)OPCode.InvalidSession:
                     {
                         if (LogActions)
                         {
@@ -615,7 +661,7 @@ namespace SlothCord
                             });
                             var jsondata = JsonConvert.SerializeObject(new GatewayPayload()
                             {
-                                Code = OPCode.Resume,
+                                Code = (int)OPCode.Resume,
                                 EventPayload = content
                             });
                             WebSocketClient.Send(jsondata);
@@ -637,7 +683,7 @@ namespace SlothCord
                         UnknownEvent?.Invoke(this, new UnkownEventArgs()
                         {
                             EventName = data.EventName,
-                            OPCode = ((int)data.Code)
+                            OPCode = data.Code
                         });
                     }
                     break;
@@ -715,6 +761,32 @@ namespace SlothCord
             if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordGuild>(content);
             else return null;
         }
+
+        public Task UpdateCurrentUserPresenceAsync(DiscordGame game = null, StatusType status_type = StatusType.Online)
+        {
+            string status = null;
+            switch (status_type)
+            {
+                case StatusType.Online: status = "online"; break;
+                case StatusType.Offline: status = "offline"; break;
+                case StatusType.DND: status = "dnd"; break;
+                case StatusType.Idle: status = "idle"; break;
+            }
+            var request = new UserPresencePayload()
+            {
+                User = this.CurrentUser,
+                Game = game,
+                Status = status
+            };
+            var pldata = new GatewayPayload()
+            {
+                Code = 3,
+                EventPayload = request
+            };
+            var payload = JsonConvert.SerializeObject(pldata);
+            WebSocketClient.Send(payload);
+            return Task.CompletedTask;
+        }
     }
 
     public class ApiBase
@@ -723,7 +795,7 @@ namespace SlothCord
         protected internal static WebSocket WebSocketClient { get; set; }
         protected internal static Uri _baseAddress = new Uri("https://discordapp.com/api/v6");
 
-        internal async Task<string> RetryAsync(int retry_in, HttpRequestMessage msg)
+        protected internal async Task<string> RetryAsync(int retry_in, HttpRequestMessage msg)
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Gateway Ratelimit Reached, waiting {retry_in}ms");
@@ -1036,12 +1108,5 @@ namespace SlothCord
             if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordChannel>(content);
             else return null;
         }
-    }
-
-    public struct Request
-    {
-        HttpMethod Method { get; set; }
-        HttpRequestMessage RequestMessage { get; set; }
-        string Endpoint { get; set; }
     }
 }

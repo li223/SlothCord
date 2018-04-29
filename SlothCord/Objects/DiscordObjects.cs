@@ -75,10 +75,13 @@ namespace SlothCord.Objects
     public sealed class DiscordGame
     {
         [JsonProperty("name")]
-        public string Name { get; internal set; }
+        public string Name { get; set; }
 
         [JsonProperty("type")]
-        public PlayingType Type { get; internal set; }
+        public PlayingType Type { get; set; }
+
+        [JsonProperty("url")]
+        public string Url { get; set; }
     }
 
     public sealed class DiscordMessage : MessageMethods
@@ -161,13 +164,13 @@ namespace SlothCord.Objects
         public string Url { get; private set; }
 
         [JsonProperty("type")]
-        public ActivityType Type { get; private set; }
+        public ActivityType Type { get; set; }
 
         [JsonProperty("party_id", NullValueHandling = NullValueHandling.Ignore)]
         public ulong? PartyId { get; private set; }
 
         [JsonProperty("name")]
-        public string Name { get; private set; }
+        public string Name { get; set; }
 
         [JsonProperty("application_id", NullValueHandling = NullValueHandling.Ignore)]
         public long? ApplicationId { get; private set; }

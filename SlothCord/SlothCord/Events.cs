@@ -13,13 +13,19 @@ namespace SlothCord
     public delegate void OnGuildsDownloaded(object sender, IEnumerable<DiscordGuild> e);
     public delegate void OnMessageCreate(object sender, DiscordMessage e);
     public delegate void OnGuildAvailable(object sender, DiscordGuild e);
-    public delegate void OnWebSocketClose(object sender, EventArgs e);
+    public delegate void OnWebSocketClose(object sender, OnWebSocketClosedArgs e);
     public delegate void OnUnknownEvent(object sender, UnkownEventArgs e);
     public delegate void OnHeartbeat(object sender, string e);
     public delegate void OnReady(object sender, OnReadyArgs e);
     public delegate void OnClientError(object sender, ClientErroredArgs e);
     public delegate void OnSocketDataReceived(object sender, string e);
     public delegate void OnPresenceUpdate(object sender, PresenceUpdateArgs e);
+
+    public class OnWebSocketClosedArgs : EventArgs
+    {
+        public string Message;
+        public int Code;
+    }
 
     public class CommandErroredArgs : EventArgs
     {

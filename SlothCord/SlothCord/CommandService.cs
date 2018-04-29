@@ -258,14 +258,6 @@ namespace SlothCord.Commands
         {
             return await Channel.SendMessageAsync(text, is_tts, embed);
         }
-
-        public async Task<DiscordUser> GetUserAsync(ulong user_id)
-        {
-            var response = await _httpClient.GetAsync(new Uri($"{_baseAddress}/users/{user_id}"));
-            var content = await response.Content.ReadAsStringAsync();
-            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordUser>(content);
-            else return null;
-        }
     }
 
     public class SlothUserCommand

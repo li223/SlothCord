@@ -113,7 +113,7 @@ namespace SlothCord.Objects
         Bearer = 1,
         User = 2
     }
-
+    
     public enum OPCode : int
     {
         Dispatch = 0,

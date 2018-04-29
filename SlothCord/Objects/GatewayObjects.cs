@@ -55,7 +55,7 @@ namespace SlothCord.Objects
         [JsonProperty("s", NullValueHandling = NullValueHandling.Ignore)]
         public int? Sequence { get; set; }
         [JsonProperty("op")]
-        public OPCode Code { get; set; }
+        public int Code { get; set; }
         [JsonProperty("d")]
         public object EventPayload { get; set; }
     }
@@ -81,9 +81,9 @@ namespace SlothCord.Objects
     internal class PresencePayload
     {
         [JsonProperty("user")]
-        public DiscordUser User { get; private set; }
+        public DiscordUser User { get; internal set; }
         [JsonProperty("status")]
-        public StatusType Status { get; private set; }
+        public StatusType Status { get; internal set; }
         [JsonProperty("roles")]
         public IReadOnlyList<ulong> RoleIds { get; private set; }
         [JsonProperty("nick")]
@@ -91,7 +91,19 @@ namespace SlothCord.Objects
         [JsonProperty("guild_id")]
         public ulong GuildId { get; private set; }
         [JsonProperty("game", NullValueHandling = NullValueHandling.Ignore)]
-        public DiscordActivity Activity { get; private set; }
+        public DiscordActivity Activity { get; internal set; }
+    }
+
+    internal class UserPresencePayload
+    {
+        [JsonProperty("user")]
+        public DiscordUser User { get; internal set; }
+
+        [JsonProperty("status")]
+        public string Status { get; internal set; }
+
+        [JsonProperty("game")]
+        public DiscordGame Game { get; internal set; }
     }
 
     internal class VoiceStateUpdatePaylod
