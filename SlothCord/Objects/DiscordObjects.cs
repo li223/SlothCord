@@ -645,9 +645,9 @@ namespace SlothCord.Objects
     public sealed class DiscordChannel : ChannelMethods
     {
         public async Task<DiscordMessage> PingB1nzyAsync()
-       ｛
+        {
             return await base.CreateMessageAsync(this.Id, "<&!80351110224678912>", false, null);
-        ｝
+        }
         public async Task<DiscordInvite> DeleteInviteAsync(string code)
         {
             return await base.DeleteDiscordInviteAsync(code);
