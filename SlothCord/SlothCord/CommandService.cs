@@ -79,6 +79,57 @@ namespace SlothCord.Commands
                 CommandName = x.GetCustomAttribute<CommandAttribute>().CommandName
             }));
         }
+        public void RegisterCommand(object obj)
+        {
+            var type = obj.GetType();
+            var groups = type.GetNestedTypes().Where(x => x.GetCustomAttribute<GroupAttribute>() != null);
+            foreach (var group in groups)
+            {
+                var groupatt = group.GetCustomAttribute<GroupAttribute>();
+                var methods = group.GetMethods();
+                var exemeth = methods.FirstOrDefault(x => x.Name == "ExecuteAsync");
+
+                List<SlothUserCommand> cmds = new List<SlothUserCommand>();
+                for (var count = 0; count < group.GetMethods().Count(); count++)
+                {
+                    if (methods[count].HasAttribute<CommandAttribute>())
+                        cmds.Add(new SlothUserCommand()
+                        {
+                            ClassInstance = Activator.CreateInstance(group),
+                            MethodName = methods[count].Name,
+                            Method = methods[count],
+                            CommandName = methods[count].GetCustomAttribute<CommandAttribute>().CommandName,
+                            Parameters = methods[count].GetParameters(),
+                            CommandNameAliases = methods[count].GetCustomAttribute<AliasesAttribute>()?.Aliases ?? null
+                        });
+                }
+
+                UserDefinedGroups.Add(new SlothUserCommandGroup()
+                {
+                    InvokeWithoutSubCommand = groupatt.InvokeWithoutSubCommand,
+                    GroupName = groupatt.GroupName,
+                    Commands = cmds,
+                    GroupNameAliases = group.GetCustomAttribute<AliasesAttribute>()?.Aliases ?? null,
+                    GroupExecuteCommand = (groupatt.InvokeWithoutSubCommand) ? new SlothUserCommand()
+                    {
+                        ClassInstance = Activator.CreateInstance(group),
+                        MethodName = exemeth?.Name,
+                        Method = exemeth,
+                        Parameters = exemeth?.GetParameters()
+                    } : null
+                });
+            }
+
+            UserDefinedCommands.AddRange(type.GetMethods().Where(x => x.GetCustomAttribute<CommandAttribute>() != null && x.IsPublic).Select(x => new SlothUserCommand()
+            {
+                ClassInstance = Activator.CreateInstance(type),
+                MethodName = x.Name,
+                Method = x,
+                Parameters = x.GetParameters(),
+                CommandName = x.GetCustomAttribute<CommandAttribute>().CommandName
+            }));
+
+        }
 
         internal List<SlothUserCommand> UserDefinedCommands = new List<SlothUserCommand>();
 
