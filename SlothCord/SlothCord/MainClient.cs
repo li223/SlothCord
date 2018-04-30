@@ -669,6 +669,7 @@ namespace SlothCord
                         else
                         {
                             await SendIdentifyAsync();
+                            _downloadedGuilds = 0;
                         }
                         break;
                     }
@@ -774,9 +775,10 @@ namespace SlothCord
             }
             var request = new UserPresencePayload()
             {
-                User = this.CurrentUser,
+                Since = null,
                 Game = game,
-                Status = status
+                Status = status,
+                Afk = false
             };
             var pldata = new GatewayPayload()
             {
