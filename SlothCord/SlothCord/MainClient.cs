@@ -145,9 +145,11 @@ namespace SlothCord
                 WebSocketClient.MessageReceived += WebSocketClient_MessageReceived;
                 WebSocketClient.Closed += WebSocketClient_Closed;
 #if NETCORE
+                await WebSocketClient.CloseAsync();
                 await WebSocketClient.OpenAsync();
 #elif NETFX47
                 WebSocketClient.Open();
+                WebSocketClient.Close();
 #endif
             }
             else
@@ -668,8 +670,9 @@ namespace SlothCord
                         }
                         else
                         {
-                            await SendIdentifyAsync();
+                            _sessionId = "";
                             _downloadedGuilds = 0;
+                            await SendIdentifyAsync();
                         }
                         break;
                     }
