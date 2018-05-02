@@ -5,8 +5,6 @@ VisualStudioVersion = 15.0.27323.2
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SlothCord", "SlothCord\SlothCord.csproj", "{A7687EBF-744E-4EFD-8EE8-D02F03B720D1}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "C++CLI Example", "..\..\..\Documents\Visual Studio 2017\Projects\SlothBotCLR\C++CLI Example\C++CLI Example.vcxproj", "{7A04DD91-1A13-466C-B9DC-A146BDC29E71}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,16 +27,6 @@ Global
 		{A7687EBF-744E-4EFD-8EE8-D02F03B720D1}.Release|x64.Build.0 = Release|Any CPU
 		{A7687EBF-744E-4EFD-8EE8-D02F03B720D1}.Release|x86.ActiveCfg = Release|Any CPU
 		{A7687EBF-744E-4EFD-8EE8-D02F03B720D1}.Release|x86.Build.0 = Release|Any CPU
-		{7A04DD91-1A13-466C-B9DC-A146BDC29E71}.Debug|Any CPU.ActiveCfg = Debug|Win32
-		{7A04DD91-1A13-466C-B9DC-A146BDC29E71}.Debug|x64.ActiveCfg = Debug|x64
-		{7A04DD91-1A13-466C-B9DC-A146BDC29E71}.Debug|x64.Build.0 = Debug|x64
-		{7A04DD91-1A13-466C-B9DC-A146BDC29E71}.Debug|x86.ActiveCfg = Debug|Win32
-		{7A04DD91-1A13-466C-B9DC-A146BDC29E71}.Debug|x86.Build.0 = Debug|Win32
-		{7A04DD91-1A13-466C-B9DC-A146BDC29E71}.Release|Any CPU.ActiveCfg = Release|Win32
-		{7A04DD91-1A13-466C-B9DC-A146BDC29E71}.Release|x64.ActiveCfg = Release|x64
-		{7A04DD91-1A13-466C-B9DC-A146BDC29E71}.Release|x64.Build.0 = Release|x64
-		{7A04DD91-1A13-466C-B9DC-A146BDC29E71}.Release|x86.ActiveCfg = Release|Win32
-		{7A04DD91-1A13-466C-B9DC-A146BDC29E71}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
