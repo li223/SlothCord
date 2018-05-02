@@ -81,7 +81,7 @@ namespace SlothCord.Commands
         }
         public void RegisterCommand(object obj)
         {
-            var type = obj.GetType();
+            var type = obj as Type;
             var groups = type.GetNestedTypes().Where(x => x.GetCustomAttribute<GroupAttribute>() != null);
             foreach (var group in groups)
             {

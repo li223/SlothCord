@@ -145,11 +145,9 @@ namespace SlothCord
                 WebSocketClient.MessageReceived += WebSocketClient_MessageReceived;
                 WebSocketClient.Closed += WebSocketClient_Closed;
 #if NETCORE
-                await WebSocketClient.CloseAsync();
                 await WebSocketClient.OpenAsync();
 #elif NETFX47
                 WebSocketClient.Open();
-                WebSocketClient.Close();
 #endif
             }
             else
@@ -250,8 +248,10 @@ namespace SlothCord
             var data = e as OnWebSocketClosedArgs;
             SocketClosed?.Invoke(this, data);
 #if NETCORE
+            await WebSocketClient.CloseAsync();
             await WebSocketClient.OpenAsync();
 #elif NETFX47
+            WebSocketClient.Close();
             WebSocketClient.Open();
 #endif
         }
