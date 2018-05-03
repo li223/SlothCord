@@ -1,21 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SlothCord.Objects
+﻿namespace SlothCord.Objects
 {
     public enum DiscordColor : int
     {
         Blue = 0x6300FF,
         Orange = 0xE86800,
-        White = 0xF5F5F5,
+        White = 0xFFFFFF,
         Purple = 0x952097,
         Lilac = 0xD58BFF,
         Gray = 0x847671,
         Red = 0xE32B15,
-        Green = 0x1ca50f
+        Green = 0x1ca50f,
+        DarkButNotBlack = 0x2C2F33
     }
 
     public enum VerificationLevel : int
