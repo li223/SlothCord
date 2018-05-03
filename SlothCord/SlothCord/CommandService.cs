@@ -79,6 +79,7 @@ namespace SlothCord.Commands
                 CommandName = x.GetCustomAttribute<CommandAttribute>().CommandName
             }));
         }
+
         public void RegisterCommand(object obj)
         {
             var type = obj as Type;

@@ -6,6 +6,18 @@ using System.Threading.Tasks;
 
 namespace SlothCord.Objects
 {
+    public enum DiscordColor : int
+    {
+        Blue = 0x6300FF,
+        Orange = 0xE86800,
+        White = 0xF5F5F5,
+        Purple = 0x952097,
+        Lilac = 0xD58BFF,
+        Gray = 0x847671,
+        Red = 0xE32B15,
+        Green = 0x1ca50f
+    }
+
     public enum VerificationLevel : int
     {
         NONE = 0,

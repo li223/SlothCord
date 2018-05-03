@@ -4,6 +4,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Drawing;
+using System.Globalization;
 
 namespace SlothCord.Objects
 {
@@ -43,7 +44,7 @@ namespace SlothCord.Objects
         public string Email { get; private set; }
 
         [JsonIgnore]
-        public string AvatarUrl { get { return $"https/cdn.discordapp.com/avatars/{this.Id}/{this.Avatar}.png"; } }
+        public string AvatarUrl { get { return $"https://cdn.discordapp.com/avatars/{this.Id}/{this.Avatar}.png"; } }
 
         [JsonProperty("avatar")]
         private string Avatar { get; set; }
@@ -282,10 +283,33 @@ namespace SlothCord.Objects
 
         [JsonProperty("timestamp")]
         public DateTimeOffset? Timestamp { get; set; } = null;
-
+        
         [JsonProperty("color", NullValueHandling = NullValueHandling.Ignore)]
-        public int Color { get; set; } = 0;
+        public int IntColor { get; set; }
 
+#if NETCORE
+        [JsonIgnore]
+        public DiscordColor Color
+        {
+            get
+            {
+                Enum.TryParse(typeof(DiscordColor), this.IntColor.ToString(), out object res);
+                return (DiscordColor)res;
+            }
+            set { this.IntColor = (int)value; }
+        }
+#else
+        [JsonIgnore]
+        public DiscordColor Color
+        {
+            get
+            {
+                Enum.TryParse<DiscordColor>(this.IntColor.ToString(), out DiscordColor res);
+                return res;
+            }
+            set { this.IntColor = (int)value; }
+        }
+#endif
         [JsonProperty("footer", NullValueHandling = NullValueHandling.Ignore)]
         public EmbedFooter Footer { get; set; }
 
