@@ -302,7 +302,7 @@ namespace SlothCord.Objects
         {
             get
             {
-                Enum.TryParse<DiscordColor>(this.IntColor.ToString(), out DiscordColor res);
+                Enum.TryParse(this.IntColor.ToString(), out DiscordColor res);
                 return res;
             }
             set { this.IntColor = (int)value; }

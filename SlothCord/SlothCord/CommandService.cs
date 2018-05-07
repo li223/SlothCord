@@ -355,7 +355,7 @@ namespace SlothCord.Commands
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
     public class AliasesAttribute : Attribute
     {
-        public AliasesAttribute(string[] aliases)
+        public AliasesAttribute(params string[] aliases)
         {
             this.Aliases = aliases;
         }
