@@ -715,11 +715,11 @@ namespace SlothCord
             }
         }
 
-        public async Task<IEnumerable<DiscordGuild>> GetUserGuildsAsync()
+        public async Task<IReadOnlyList<DiscordGuild>> GetUserGuildsAsync()
         {
             var response = await _httpClient.GetAsync(new Uri($"{_baseAddress}/users/@me/guilds"));
             var content = await response.Content.ReadAsStringAsync();
-            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<IEnumerable<DiscordGuild>>(content);
+            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<IReadOnlyList<DiscordGuild>>(content);
             else
             {
                 HttpError?.Invoke(this, content);
@@ -747,7 +747,7 @@ namespace SlothCord
             else return null;
         }
 
-        public async Task<DiscordGuild> CreateGuildAsync(string name, string region, string icon_file_path, VerificationLevel verificationLevel, NotificationLevel notificationLevel, ExplicitContentFilterLevel explicitContentFilter, IEnumerable<DiscordRole> roles, IEnumerable<DiscordChannel> channels)
+        public async Task<DiscordGuild> CreateGuildAsync(string name, string region, string icon_file_path, VerificationLevel verificationLevel, NotificationLevel notificationLevel, ExplicitContentFilterLevel explicitContentFilter, IReadOnlyList<DiscordRole> roles, IReadOnlyList<DiscordChannel> channels)
         {
             var guild = new DiscordGuild()
             {
@@ -797,7 +797,9 @@ namespace SlothCord
     public class ApiBase
     {
         protected internal static HttpClient _httpClient = new HttpClient();
+
         protected internal static WebSocket WebSocketClient { get; set; }
+
         protected internal static Uri _baseAddress = new Uri("https://discordapp.com/api/v6");
 
         protected internal async Task<string> RetryAsync(int retry_in, HttpRequestMessage msg)
@@ -889,7 +891,7 @@ namespace SlothCord
                 else HttpError?.Invoke(this, content);
         }
 
-        internal async Task<IEnumerable<DiscordGuildMember>> ListGuildMembersAsync(ulong guild_id, int limit = 100, ulong? around = null)
+        internal async Task<IReadOnlyList<DiscordGuildMember>> ListGuildMembersAsync(ulong guild_id, int limit = 100, ulong? around = null)
         {
             var requeststring = $"{_baseAddress}/guilds/{guild_id}/members?limit={limit}";
             if (around != null)
@@ -900,13 +902,13 @@ namespace SlothCord
             if (response.IsSuccessStatusCode)
             {
                 var members = JsonConvert.DeserializeObject<List<DiscordGuildMember>>(content);
-                for(var i = 0; i < members.Count(); i++)  members[i].GuildId = guild_id;
-                return members as IEnumerable<DiscordGuildMember>;
+                for (var i = 0; i < members.Count(); i++) members[i].GuildId = guild_id;
+                return members as IReadOnlyList<DiscordGuildMember>;
             }
             else
             {
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
-                    return JsonConvert.DeserializeObject<IEnumerable<DiscordGuildMember>>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg));
+                    return JsonConvert.DeserializeObject<IReadOnlyList<DiscordGuildMember>>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg));
                 HttpError?.Invoke(this, content);
                 return null;
             }
@@ -931,7 +933,7 @@ namespace SlothCord
             }
         }
 
-        internal async Task<DiscordChannel> GetGuildChannelAsync(ulong guild_id, ulong channel_id)
+        internal async Task<DiscordChannel> ListGuildChannelAsync(ulong guild_id, ulong channel_id)
         {
             var msg = new HttpRequestMessage(HttpMethod.Get, new Uri($"{_baseAddress}/channels/{channel_id}"));
             var response = await _httpClient.SendAsync(msg);
@@ -946,6 +948,41 @@ namespace SlothCord
             {
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
                     return JsonConvert.DeserializeObject<DiscordChannel>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg));
+                else return null;
+            }
+        }
+
+        internal async Task<AuditLogData> ListAuditLogsAsync(ulong guild_id, ulong? user_id = null, AuditActionType? action_type = null, ulong? before = null, int? limit = null)
+        {
+
+            #region kms.jpg
+            bool addedextra = false;
+            var query = $"{_baseAddress}/guilds/{guild_id}/audit-logs";
+            if (user_id != null) query += $"?user_id={user_id}";
+            if (action_type != null)
+            {
+                if (!addedextra) query += $"?action_type={(int)action_type}";
+                else query += $"&action_type={(int)action_type}";
+            }
+            if (before != null)
+            {
+                if (!addedextra) query += $"?before={before}";
+                else query += $"&before={before}";
+            }
+            if (limit != null)
+            {
+                if (!addedextra) query += $"?limit={limit}";
+                else query += $"&limit={limit}";
+            }
+            #endregion
+            var msg = new HttpRequestMessage(HttpMethod.Get, new Uri(query));
+            var response = await _httpClient.SendAsync(msg);
+            var content = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<AuditLogData>(content);
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
+                    return JsonConvert.DeserializeObject<AuditLogData>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg));
                 else return null;
             }
         }
@@ -989,7 +1026,7 @@ namespace SlothCord
             else return JsonConvert.DeserializeObject<DiscordInvite>(content);
         }
 
-        internal async Task BulkDeleteGuildMessagesAsync(ulong? guild_id, ulong channel_id, IEnumerable<ulong> message_ids)
+        internal async Task BulkDeleteGuildMessagesAsync(ulong? guild_id, ulong channel_id, IReadOnlyList<ulong> message_ids)
         {
             if (guild_id == null) return;
             var ids = new BulkDeletePayload()
@@ -1005,7 +1042,7 @@ namespace SlothCord
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) { await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg); }
         }
 
-        internal async Task<IEnumerable<DiscordMessage>> GetMultipleMessagesAsync(ulong channel_id, int limit = 50, ulong? around = null, ulong? after = null, ulong? before = null)
+        internal async Task<IReadOnlyList<DiscordMessage>> GetMultipleMessagesAsync(ulong channel_id, int limit = 50, ulong? around = null, ulong? after = null, ulong? before = null)
         {
             var requeststring = $"{_baseAddress}/channels/{channel_id}/messages?limit={limit}";
             if (around != null)
@@ -1016,7 +1053,7 @@ namespace SlothCord
                 requeststring += $"&after={after}";
             var response = await _httpClient.GetAsync(new Uri(requeststring));
             var content = await response.Content.ReadAsStringAsync();
-            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<IEnumerable<DiscordMessage>>(content);
+            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<IReadOnlyList<DiscordMessage>>(content);
             else
             {
                 HttpError?.Invoke(this, content);
@@ -1089,7 +1126,7 @@ namespace SlothCord
 
     public class MemberMethods : ApiBase
     {
-        internal async Task ModifyAsync(ulong guild_id, ulong member_id, string nickname, IEnumerable<DiscordRole> roles, bool? is_muted, bool? is_deaf, ulong? channel_id)
+        internal async Task ModifyAsync(ulong guild_id, ulong member_id, string nickname, IReadOnlyList<DiscordRole> roles, bool? is_muted, bool? is_deaf, ulong? channel_id)
         {
             var request = new HttpRequestMessage(HttpMethod.Put, new Uri($"{_baseAddress}/guilds/{guild_id}/members/{member_id}"))
             {

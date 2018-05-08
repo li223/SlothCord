@@ -17,8 +17,8 @@ namespace SlothCord.Objects
         [JsonProperty("status")]
         public StatusType Status { get; internal set; }
 
-        [JsonProperty("game", NullValueHandling = NullValueHandling.Ignore)]
-        public DiscordActivity Activity { get; internal set; }
+        [JsonProperty("game")]
+        public DiscordActivity? Activity { get; internal set; }
 
         [JsonProperty("verified")]
         public bool Verified { get; private set; }
@@ -59,14 +59,14 @@ namespace SlothCord.Objects
         [JsonProperty("game")]
         public DiscordGame Game { get; private set; }
 
-        [JsonProperty("status", NullValueHandling = NullValueHandling.Ignore)]
-        public StatusType Status { get; private set; }
+        [JsonProperty("status")]
+        public StatusType? Status { get; private set; }
 
-        [JsonProperty("since", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("since")]
         public long? Since { get; private set; }
 
-        [JsonProperty("afk", NullValueHandling = NullValueHandling.Ignore)]
-        public bool AFK { get; private set; } = false;
+        [JsonProperty("afk")]
+        public bool? AFK { get; private set; } = false;
     }
 
     public sealed class DiscordVoiceState { }
@@ -97,10 +97,10 @@ namespace SlothCord.Objects
         [JsonProperty("id")]
         public ulong Id { get; private set; }
 
-        [JsonProperty("channel_id", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("channel_id")]
         public ulong? ChannelId { get; private set; } = 0;
 
-        [JsonProperty("author", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("author")]
         public DiscordUser Author { get; private set; }
 
         [JsonProperty("content")]
@@ -109,7 +109,7 @@ namespace SlothCord.Objects
         [JsonProperty("timestamp")]
         public DateTimeOffset Timestamp { get; private set; }
 
-        [JsonProperty("edited_timestamp", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("edited_timestamp")]
         public DateTimeOffset? EditedTimestamp { get; private set; }
 
         [JsonProperty("tts")]
@@ -127,37 +127,37 @@ namespace SlothCord.Objects
         [JsonIgnore]
         public IReadOnlyList<DiscordRole> RoleMentions { get; private set; }
 
-        [JsonProperty("attachments", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("attachments")]
         public IReadOnlyList<DiscordAttachment> Attachments { get; private set; }
 
         [JsonProperty("embeds")]
         public IReadOnlyList<DiscordEmbed> Embeds { get; private set; }
 
-        [JsonProperty("reactions", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("reactions")]
         public IReadOnlyList<DiscordReaction> Reactions { get; private set; }
 
-        [JsonProperty("nonce", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("nonce")]
         public ulong? Nonce { get; private set; }
 
         [JsonProperty("pinned")]
         public bool IsPinned { get; private set; }
 
-        [JsonProperty("webhook_id", NullValueHandling = NullValueHandling.Ignore)]
-        public ulong WebhookId { get; private set; }
+        [JsonProperty("webhook_id")]
+        public ulong? WebhookId { get; private set; }
 
         [JsonProperty("type")]
         public MessageType Type { get; private set; }
 
-        [JsonProperty("activity", NullValueHandling = NullValueHandling.Ignore)]
-        public DiscordActivity Activity { get; private set; }
+        [JsonProperty("activity")]
+        public DiscordActivity? Activity { get; private set; }
 
-        [JsonProperty("application", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("application")]
         public DiscordApplication Application { get; private set; }
     }
 
     public sealed class DiscordApplication { }
 
-    public sealed class DiscordActivity
+    public struct DiscordActivity
     {
         [JsonProperty("url")]
         public string Url { get; private set; }
@@ -165,13 +165,13 @@ namespace SlothCord.Objects
         [JsonProperty("type")]
         public ActivityType Type { get; set; }
 
-        [JsonProperty("party_id", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("party_id")]
         public ulong? PartyId { get; private set; }
 
         [JsonProperty("name")]
         public string Name { get; set; }
 
-        [JsonProperty("application_id", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("application_id")]
         public long? ApplicationId { get; private set; }
         
         [JsonProperty("state")]
@@ -180,26 +180,26 @@ namespace SlothCord.Objects
         [JsonProperty("details")]
         public string Details { get; private set; }
 
-        [JsonProperty("timestamps", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("timestamps")]
         public ActivityTimestamps Timestamps { get; private set; }
 
-        [JsonProperty("party", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("party")]
         public ActivityParty Party { get; private set; }
 
-        [JsonProperty("assets", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("assets")]
         public ActivityAssets Assets { get; private set; }
 
-        [JsonProperty("secrets", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("secrets")]
         public ActivitySecrets Secrets { get; private set; }
 
-        [JsonProperty("instance", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("instance")]
         public bool? InGame { get; private set; }
 
-        [JsonProperty("flags", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("flags")]
         public int? Flags { get; private set; }
     }
 
-    public sealed class ActivitySecrets
+    public struct ActivitySecrets
     {
         [JsonProperty("join")]
         public string Join { get; private set; }
@@ -211,7 +211,7 @@ namespace SlothCord.Objects
         public string Match { get; private set; }
     }
 
-    public sealed class ActivityAssets
+    public struct ActivityAssets
     {
         [JsonProperty("large_image")]
         public string LargeImage { get; private set; }
@@ -226,21 +226,21 @@ namespace SlothCord.Objects
         public string SmallText { get; private set; }
     }
 
-    public sealed class ActivityParty
+    public struct ActivityParty
     {
         [JsonProperty("id")]
         public string Id { get; private set; }
 
-        [JsonProperty("size", NullValueHandling = NullValueHandling.Ignore)]
-        public IEnumerable<int> Size { get; private set; }
+        [JsonProperty("size")]
+        public IReadOnlyList<int> Size { get; private set; }
     }
 
-    public sealed class ActivityTimestamps
+    public struct ActivityTimestamps
     {
-        [JsonProperty("start", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("start")]
         public ulong? Start { get; private set; }
 
-        [JsonProperty("end", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("end")]
         public ulong? End { get; private set; }
     }
 
@@ -279,7 +279,7 @@ namespace SlothCord.Objects
         [JsonProperty("url")]
         public string Url { get; set; }
 
-        [JsonProperty("timestamp")]
+        [JsonProperty("timestamp", NullValueHandling = NullValueHandling.Ignore)]
         public DateTimeOffset? Timestamp { get; set; } = null;
         
         [JsonProperty("color", NullValueHandling = NullValueHandling.Ignore)]
@@ -425,11 +425,16 @@ namespace SlothCord.Objects
 
     public sealed class DiscordGuild : GuildMethods
     {
+        public async Task<AuditLogData> GetAuditLogsAsync(ulong? user_id = null, AuditActionType? action_type = null, ulong? before = null, int? limit = null)
+        {
+            return await base.ListAuditLogsAsync(this.Id, user_id, action_type, before, limit);
+        }
+
         public async Task LeaveAsync() => await base.LeaveGuildAsync(this.Id);
 
         public async Task<DiscordChannel> GetChannelAsync(ulong channel_id)
         {
-            return await base.GetGuildChannelAsync(this.Id, channel_id);
+            return await base.ListGuildChannelAsync(this.Id, channel_id);
         }
 
         public async Task<DiscordGuildMember> GetMemberAsync(ulong user_id)
@@ -437,7 +442,7 @@ namespace SlothCord.Objects
             return await base.ListGuildMemberAsync(this.Id, user_id);
         }
 
-        public async Task<IEnumerable<DiscordGuildMember>> GetMembersAsync(int limit = 100, ulong? around = null)
+        public async Task<IReadOnlyList<DiscordGuildMember>> GetMembersAsync(int limit = 100, ulong? around = null)
         {
             return await base.ListGuildMembersAsync(this.Id, limit, around);
         }
@@ -451,79 +456,79 @@ namespace SlothCord.Objects
         [JsonProperty("name")]
         public string Name { get; internal set; }
 
-        [JsonProperty("channels", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("channels")]
         public IReadOnlyList<DiscordChannel> Channels { get; internal set; }
 
         [JsonProperty("large")]
         public bool IsLarge { get; private set; }
 
-        [JsonProperty("voice_states", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("voice_states")]
         public IReadOnlyList<DiscordVoiceState> VoiceStates { get; private set; }
 
-        [JsonProperty("system_channel_id", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("system_channel_id")]
         public ulong? DefaultChannelId { get; private set; } = 0;
 
         [JsonProperty("id")]
         public ulong Id { get; private set; }
 
-        [JsonProperty("application_id", NullValueHandling = NullValueHandling.Ignore)]
-        public ulong ApplicationId { get; private set; }
+        [JsonProperty("application_id")]
+        public ulong? ApplicationId { get; private set; }
 
-        [JsonProperty("icon", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("icon")]
         public string IconUrl { get; internal set; }
 
-        [JsonProperty("splash", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("splash")]
         public string SplashUrl { get; private set; }
 
-        [JsonProperty("OwnerId", NullValueHandling = NullValueHandling.Ignore)]
-        public ulong OwnerId { get; private set; }
+        [JsonProperty("OwnerId")]
+        public ulong? OwnerId { get; private set; }
 
-        [JsonProperty("region", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("region")]
         public string Region { get; internal set; }
 
-        [JsonProperty("afk_channel_id", NullValueHandling = NullValueHandling.Ignore)]
-        public ulong AfkChannelId { get; private set; } = 0;
+        [JsonProperty("afk_channel_id")]
+        public ulong? AfkChannelId { get; private set; } = 0;
 
-        [JsonProperty("afk_timeout", NullValueHandling = NullValueHandling.Ignore)]
-        public int AfkTimeout { get; private set; }
+        [JsonProperty("afk_timeout")]
+        public int? AfkTimeout { get; private set; }
 
-        [JsonProperty("embed_enabled", NullValueHandling = NullValueHandling.Ignore)]
-        public bool EmbedsEnabled { get; private set; }
+        [JsonProperty("embed_enabled")]
+        public bool? EmbedsEnabled { get; private set; }
 
-        [JsonProperty("embed_channel_id", NullValueHandling = NullValueHandling.Ignore)]
-        public ulong EmbedChannelId { get; private set; } = 0;
+        [JsonProperty("embed_channel_id")]
+        public ulong? EmbedChannelId { get; private set; } = 0;
 
-        [JsonProperty("verification_level", NullValueHandling = NullValueHandling.Ignore)]
-        public VerificationLevel VerificationLevel { get; internal set; }
+        [JsonProperty("verification_level")]
+        public VerificationLevel? VerificationLevel { get; internal set; }
 
-        [JsonProperty("default_message_notifications", NullValueHandling = NullValueHandling.Ignore)]
-        public NotificationLevel DefaultMessageNotifications { get; internal set; }
+        [JsonProperty("default_message_notifications")]
+        public NotificationLevel? DefaultMessageNotifications { get; internal set; }
 
-        [JsonProperty("explicit_content_filter", NullValueHandling = NullValueHandling.Ignore)]
-        public ExplicitContentFilterLevel ExplicitContentFilter { get; internal set; }
+        [JsonProperty("explicit_content_filter")]
+        public ExplicitContentFilterLevel? ExplicitContentFilter { get; internal set; }
 
-        [JsonProperty("mfa_level", NullValueHandling = NullValueHandling.Ignore)]
-        public MFALevel MfaLevel { get; private set; }
+        [JsonProperty("mfa_level")]
+        public MFALevel? MfaLevel { get; private set; }
 
-        [JsonProperty("widget_enabled", NullValueHandling = NullValueHandling.Ignore)]
-        public bool WidgetEnabled { get; private set; }
+        [JsonProperty("widget_enabled")]
+        public bool? WidgetEnabled { get; private set; }
 
-        [JsonProperty("widget_channel_id", NullValueHandling = NullValueHandling.Ignore)]
-        public ulong WidgetChannelId { get; private set; } = 0;
+        [JsonProperty("widget_channel_id")]
+        public ulong? WidgetChannelId { get; private set; } = 0;
 
-        [JsonProperty("roles", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("roles")]
         public IReadOnlyList<DiscordRole> Roles { get; internal set; }
 
-        [JsonProperty("emojis", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("emojis")]
         public IReadOnlyList<DiscordEmoji> Emojis { get; private set; }
 
-        [JsonProperty("features", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("features")]
         public IReadOnlyList<string> Features { get; private set; }
 
-        [JsonProperty("presences", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("presences")]
         public IReadOnlyList<DiscordPresence> Presences { get; private set; }
 
-        [JsonProperty("members", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("members")]
         public IReadOnlyList<DiscordGuildMember> Members { get; private set; }
 
         [JsonProperty("unavailable")]
@@ -535,7 +540,7 @@ namespace SlothCord.Objects
 
     public sealed class DiscordGuildMember: MemberMethods
     {
-        public async Task ModifyAsync(string nickname, IEnumerable<DiscordRole> roles, bool? is_muted, bool? is_deaf, ulong? channel_id)
+        public async Task ModifyAsync(string nickname, IReadOnlyList<DiscordRole> roles, bool? is_muted, bool? is_deaf, ulong? channel_id)
         {
             if (string.IsNullOrWhiteSpace(nickname))
                 nickname = this.Nickname;
@@ -625,7 +630,7 @@ namespace SlothCord.Objects
         public DateTime JoinedAt { get; private set; }
 
         [JsonProperty("roles")]
-        internal IEnumerable<ulong> RoleIds { get; set; }
+        internal IReadOnlyList<ulong> RoleIds { get; set; }
 
         [JsonIgnore]
         public DiscordGuild Guild { get; internal set; }
@@ -687,9 +692,9 @@ namespace SlothCord.Objects
 
         public async Task DeleteMessageAsync(DiscordMessage message) => await base.DeleteChannelMessageAsync(this.Id, message.Id);
 
-        public async Task BulkDeleteAsync(IEnumerable<ulong> ids) => await base.BulkDeleteGuildMessagesAsync(this.GuildId, this.Id, ids);
+        public async Task BulkDeleteAsync(IReadOnlyList<ulong> ids) => await base.BulkDeleteGuildMessagesAsync(this.GuildId, this.Id, ids);
 
-        public async Task BulkDeleteAsync(IEnumerable<DiscordMessage> msgs) => await base.BulkDeleteGuildMessagesAsync(this.GuildId, this.Id, msgs.Select(x => x.Id) as IEnumerable<ulong>);
+        public async Task BulkDeleteAsync(IReadOnlyList<DiscordMessage> msgs) => await base.BulkDeleteGuildMessagesAsync(this.GuildId, this.Id, msgs.Select(x => x.Id) as IReadOnlyList<ulong>);
 
         public async Task<DiscordMessage> SendMessageAsync(string message = null, bool is_tts = false, DiscordEmbed embed = null)
         {
@@ -706,7 +711,7 @@ namespace SlothCord.Objects
             return await base.GetSingleMessageAsync(this.Id, id);
         }
 
-        public async Task<IEnumerable<DiscordMessage>> GetMessagesAsync(int limit = 50, ulong? around = null, ulong? after = null, ulong? before = null)
+        public async Task<IReadOnlyList<DiscordMessage>> GetMessagesAsync(int limit = 50, ulong? around = null, ulong? after = null, ulong? before = null)
         {
             return await base.GetMultipleMessagesAsync(this.Id, limit, around, after, before);
         }
@@ -751,7 +756,7 @@ namespace SlothCord.Objects
         public ulong OwnerId { get; private set; }
     }
 
-    public sealed class Category
+    public struct Category
     {
         [JsonProperty("permission_overwrites", NullValueHandling = NullValueHandling.Ignore)]
         public IReadOnlyList<ChannelOverwrite> Overwrite { get; private set; }
@@ -800,5 +805,209 @@ namespace SlothCord.Objects
 
         [JsonProperty("revoked", NullValueHandling = NullValueHandling.Ignore)]
         public bool? IsRevoked { get; private set; }
+    }
+
+    public struct Webhook { }
+
+    public sealed class AuditLogData
+    {
+        [JsonProperty("webhooks")]
+        public IReadOnlyList<Webhook> Webhooks { get; private set; }
+
+        [JsonProperty("users")]
+        public IReadOnlyList<DiscordUser> Users { get; private set; }
+
+        [JsonProperty("audit_log_entries")]
+        public IReadOnlyList<AuditEntryObject> Entries { get; private set; }
+    }
+
+    public struct AuditEntryObject
+    {
+        [JsonProperty("target_id")]
+        public ulong TargetType { get; private set; }
+
+        [JsonProperty("changes", NullValueHandling = NullValueHandling.Ignore)]
+        public IReadOnlyList<AuditChange> Changes { get; private set; }
+
+        [JsonProperty("user_id")]
+        public ulong ActionedUserId { get; private set; }
+
+        [JsonProperty("id")]
+        public ulong Id { get; private set; }
+
+        [JsonProperty("action_type")]
+        public AuditActionType ActionType { get; private set; }
+
+        [JsonProperty("options", NullValueHandling = NullValueHandling.Ignore)]
+        public Options? Options { get; private set; }
+
+        [JsonProperty("reason")]
+        public string Reason { get; private set; }
+    }
+
+    public struct Options
+    {
+        [JsonProperty("delete_member_days")]
+        public int? DeleteMemberDays { get; private set; }
+
+        [JsonProperty("members_removed")]
+        public int? MembersRemoved { get; private set; }
+
+        [JsonProperty("channel_id")]
+        public string ChannelId { get; private set; }
+
+        [JsonProperty("count")]
+        public string Count { get; private set; }
+
+        [JsonProperty("id")]
+        public ulong? Id { get; private set; }
+
+        [JsonProperty("type")]
+        public string OverWrittenType { get; private set; }
+        
+        [JsonProperty("role_name")]
+        public string RoleName { get; private set; }
+    }
+
+    public struct AuditChange
+    {
+        [JsonProperty("new_value")]
+        public string NewValue { get; private set; }
+
+        [JsonProperty("old_value")]
+        public string OldValue { get; private set; }
+
+        [JsonProperty("key")]
+        public string TypeKey { get; private set; }
+    }
+
+    //Tbh I have no goddamn clue
+    public struct ChangeKey
+    {
+        [JsonProperty("guild")]
+        public string GuildName { get; private set; }
+
+        [JsonProperty("icon_hash")]
+        public string IconHash { get; private set; }
+
+        [JsonProperty("splash_hash")]
+        public string SplashHash { get; private set; }
+        
+        [JsonProperty("owner_id")]
+        public ulong? OwnerId { get; private set; }
+
+        [JsonProperty("region")]
+        public string Region { get; private set; }
+
+        [JsonProperty("afk_channel_id")]
+        public ulong? AfkChannelId { get; private set; }
+
+        [JsonProperty("ask_timeout")]
+        public int? AfkTimeout { get; private set; }
+
+        [JsonProperty("mfa_level")]
+        public MFALevel? MfaLevel { get; private set; }
+
+        [JsonProperty("verification_level")]
+        public VerificationLevel? VerificationLevel { get; private set; }
+
+        [JsonProperty("explicit_content_filter")]
+        public ExplicitContentFilterLevel? ExplicitContentFilterLevel { get; private set; }
+
+        [JsonProperty("default_messages_notifications")]
+        public NotificationLevel? NotificationLevel { get; private set; }
+
+        [JsonProperty("vanity_url_code")]
+        public string VanityUrlCode { get; private set; }
+
+        [JsonProperty("$add")]
+        public IReadOnlyList<DiscordRole> RolesAdded { get; private set; }
+
+        [JsonProperty("$remove")]
+        public IReadOnlyList<DiscordRole> RolesRemoved { get; private set; }
+        
+        [JsonProperty("prune_delete_days")]
+        public int? PruneDeleteDays { get; private set; }
+
+        [JsonProperty("widget_enabled")]
+        public bool? WidgetEnabled { get; private set; }
+
+        [JsonProperty("widget_channel_id")]
+        public ulong? WdigetChannelId { get; private set; }
+
+        [JsonProperty("position")]
+        public int? Position { get; private set; }
+
+        [JsonProperty("topic")]
+        public string Topic { get; private set; }
+
+        [JsonProperty("bitrate")]
+        public int? Bitrate { get; private set; }
+
+        [JsonProperty("permission_overwrites")]
+        public IReadOnlyList<ChannelOverwrite> ChannelOverwrites { get; private set; }
+        
+        [JsonProperty("nsfw")]
+        public bool? Nsfw { get; private set; }
+
+        [JsonProperty("application_id")]
+        public ulong? AppicationId { get; private set; }
+
+        [JsonProperty("permissions")]
+        public int? Permissions { get; private set; }
+
+        [JsonProperty("color")]
+        public DiscordColor? Color { get; private set; }
+
+        [JsonProperty("hoist")]
+        public bool? IsHoisted { get; private set; }
+
+        [JsonProperty("mentionable")]
+        public bool? IsMentionable { get; private set; }
+
+        [JsonProperty("allow")]
+        public int? RoleAllow { get; private set; }
+
+        [JsonProperty("deny")]
+        public int? RoleDeny { get; private set; }
+        
+        [JsonProperty("code")]
+        public string InviteCode { get; private set; }
+
+        [JsonProperty("channel_id")]
+        public ulong? InviteChannelId { get; private set; }
+
+        [JsonProperty("inviter_id")]
+        public ulong? InviterId { get; private set; }
+
+        [JsonProperty("max_uses")]
+        public int? InviteMaxUses { get; private set; }
+
+        [JsonProperty("uses")]
+        public int? InviteUses { get; private set; }
+
+        [JsonProperty("max_age")]
+        public ulong? MaxAgeUnix { get; private set; }
+
+        [JsonProperty("temporary")]
+        public bool? IsTemporary { get; private set; }
+
+        [JsonProperty("mute")]
+        public bool? IsMute { get; private set; }
+
+        [JsonProperty("deaf")]
+        public bool? IsDeaf { get; private set; }
+
+        [JsonProperty("nick")]
+        public string Nickname { get; private set; }
+
+        [JsonProperty("avatar_hash")]
+        public string AvatarHash { get; private set; }
+
+        [JsonProperty("id")]
+        public ulong? EntityId { get; private set; }
+
+        [JsonProperty("type")]
+        public string EntityType { get; private set; }
     }
 }
