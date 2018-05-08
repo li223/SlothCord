@@ -3,6 +3,7 @@
     public enum DiscordColor : int
     {
         Blue = 0x0021ff,
+        Yellow = 0xe3ed31,
         Orange = 0xE86800,
         White = 0xFFFFFF,
         Purple = 0x952097,
