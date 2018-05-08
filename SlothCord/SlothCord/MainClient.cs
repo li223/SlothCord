@@ -477,7 +477,6 @@ namespace SlothCord
                                         var channel = guild.Channels.FirstOrDefault(x => x.Id == pl.Id);
                                         channels.Add(pl);
                                         guild.Channels = channels;
-                                        list[list.IndexOf(guild)] = guild;
                                         Guilds = list;
                                         break;
                                     }
@@ -497,7 +496,6 @@ namespace SlothCord
                                         var channel = guild.Channels.FirstOrDefault(x => x.Id == pl.Id);
                                         channels.Remove(pl);
                                         guild.Channels = channels;
-                                        list[list.IndexOf(guild)] = guild;
                                         Guilds = list;
                                         break;
                                     }
@@ -517,7 +515,6 @@ namespace SlothCord
                                         var channel = guild.Channels.FirstOrDefault(x => x.Id == pl.Id);
                                         channels[channels.IndexOf(channel)] = pl;
                                         guild.Channels = channels;
-                                        list[list.IndexOf(guild)] = guild;
                                         Guilds = list;
                                         break;
                                     }
@@ -568,8 +565,7 @@ namespace SlothCord
                                         var roles = guild.Roles as List<DiscordRole>;
                                         var role = guild.Roles.FirstOrDefault(x => x.Id == pl.Value.Id);
                                         roles[roles.IndexOf(role)] = pl.Value;
-                                        guild.Roles= roles;
-                                        list[list.IndexOf(guild)] = guild;
+                                        guild.Roles = roles;
                                         Guilds = list;
                                         break;
                                     }
