@@ -353,7 +353,8 @@ namespace SlothCord
                                             var roles = new List<DiscordRole>();
                                             foreach (var id in member.RoleIds)
                                                 roles.Add(guild.Roles.FirstOrDefault(x => x.Id == id));
-                                            member.Roles = roles; member.GuildId = guild.Id;
+                                            member.Roles = roles;
+                                            member.GuildId = guild.Id;
                                             member.Guild = guild;
                                         }
                                         AvailableGuilds.Add(guild);
@@ -470,6 +471,14 @@ namespace SlothCord
                                         }
                                         var pl = JsonConvert.DeserializeObject<DiscordChannel>(data.EventPayload.ToString());
                                         ChannelCreate?.Invoke(this, pl);
+                                        var list = Guilds as List<DiscordGuild>;
+                                        var guild = list.FirstOrDefault(x => x.Channels.Any(a => a.Id == pl.Id));
+                                        var channels = guild.Channels as List<DiscordChannel>;
+                                        var channel = guild.Channels.FirstOrDefault(x => x.Id == pl.Id);
+                                        channels.Add(pl);
+                                        guild.Channels = channels;
+                                        list[list.IndexOf(guild)] = guild;
+                                        Guilds = list;
                                         break;
                                     }
                                 case DispatchType.CHANNEL_DELETE:
@@ -482,6 +491,14 @@ namespace SlothCord
                                         }
                                         var pl = JsonConvert.DeserializeObject<DiscordChannel>(data.EventPayload.ToString());
                                         ChannelDelete?.Invoke(this, pl);
+                                        var list = Guilds as List<DiscordGuild>;
+                                        var guild = list.FirstOrDefault(x => x.Channels.Any(a => a.Id == pl.Id));
+                                        var channels = guild.Channels as List<DiscordChannel>;
+                                        var channel = guild.Channels.FirstOrDefault(x => x.Id == pl.Id);
+                                        channels.Remove(pl);
+                                        guild.Channels = channels;
+                                        list[list.IndexOf(guild)] = guild;
+                                        Guilds = list;
                                         break;
                                     }
                                 case DispatchType.CHANNEL_UPDATE:
@@ -494,6 +511,14 @@ namespace SlothCord
                                         }
                                         var pl = JsonConvert.DeserializeObject<DiscordChannel>(data.EventPayload.ToString());
                                         ChannelUpdate?.Invoke(this, pl);
+                                        var list = Guilds as List<DiscordGuild>;
+                                        var guild = list.FirstOrDefault(x => x.Channels.Any(a => a.Id == pl.Id));
+                                        var channels = guild.Channels as List<DiscordChannel>;
+                                        var channel = guild.Channels.FirstOrDefault(x => x.Id == pl.Id);
+                                        channels[channels.IndexOf(channel)] = pl;
+                                        guild.Channels = channels;
+                                        list[list.IndexOf(guild)] = guild;
+                                        Guilds = list;
                                         break;
                                     }
                                 case DispatchType.CHANNEL_PINS_UPDATE:
@@ -538,6 +563,14 @@ namespace SlothCord
                                         }
                                         var pl = JsonConvert.DeserializeObject<KeyValuePair<ulong, DiscordRole>>(data.EventPayload.ToString());
                                         RoleUpdated?.Invoke(this, pl);
+                                        var list = Guilds as List<DiscordGuild>;
+                                        var guild = list.FirstOrDefault(x => x.Roles.Any(a => a.Id == pl.Value.Id));
+                                        var roles = guild.Roles as List<DiscordRole>;
+                                        var role = guild.Roles.FirstOrDefault(x => x.Id == pl.Value.Id);
+                                        roles[roles.IndexOf(role)] = pl.Value;
+                                        guild.Roles= roles;
+                                        list[list.IndexOf(guild)] = guild;
+                                        Guilds = list;
                                         break;
                                     }
                                 case DispatchType.GUILD_ROLE_CREATE:
@@ -550,6 +583,12 @@ namespace SlothCord
                                         }
                                         var pl = JsonConvert.DeserializeObject<KeyValuePair<ulong, DiscordRole>>(data.EventPayload.ToString());
                                         RoleCreated?.Invoke(this, pl);
+                                        var list = Guilds as List<DiscordGuild>;
+                                        var guild = list.FirstOrDefault(x => x.Roles.Any(a => a.Id == pl.Value.Id));
+                                        var roles = guild.Roles as List<DiscordRole>;
+                                        roles.Add(pl.Value);
+                                        guild.Roles = roles;
+                                        Guilds = list;
                                         break;
                                     }
                                 case DispatchType.GUILD_ROLE_DELETE:
@@ -562,6 +601,13 @@ namespace SlothCord
                                         }
                                         var pl = JsonConvert.DeserializeObject<KeyValuePair<ulong, ulong>>(data.EventPayload.ToString());
                                         RoleDeleted?.Invoke(this, pl);
+                                        var list = Guilds as List<DiscordGuild>;
+                                        var guild = list.FirstOrDefault(x => x.Roles.Any(a => a.Id == pl.Value));
+                                        var roles = guild.Roles as List<DiscordRole>;
+                                        var role = roles.FirstOrDefault(x => x.Id == pl.Value);
+                                        roles.Remove(role);
+                                        guild.Roles = roles;
+                                        Guilds = list;
                                         break;
                                     }
                                 case DispatchType.VOICE_STATE_UPDATE:
