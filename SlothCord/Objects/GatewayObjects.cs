@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace SlothCord.Objects
 {
-    internal class HttpPayload
+    internal struct HttpPayload
     {
         [JsonProperty("url")]
         public string WSUrl { get; internal set; }
@@ -16,19 +16,22 @@ namespace SlothCord.Objects
     internal class MessageCreatePayload
     {
         [JsonProperty("has_content")]
-        public bool HasContent { get; internal set; }
+        public bool HasContent { get; internal set; } = false;
 
-        [JsonProperty("content")]
-        public string Content { get; internal set; }
+        [JsonProperty("content", NullValueHandling = NullValueHandling.Ignore)]
+        public string Content { get; internal set; } = null;
 
         [JsonProperty("is_tts")]
-        public bool IsTTS { get; internal set; }
+        public bool IsTTS { get; internal set; } = false;
 
         [JsonProperty("has_embed")]
-        public bool HasEmbed { get; internal set; }
+        public bool HasEmbed { get; internal set; } = false;
 
-        [JsonProperty("embed")]
-        public DiscordEmbed Embed { get; internal set; }
+        [JsonProperty("embed", NullValueHandling = NullValueHandling.Ignore)]
+        public DiscordEmbed Embed { get; internal set; } = null;
+
+        [JsonProperty("file", NullValueHandling = NullValueHandling.Ignore)]
+        public byte[] FileData { get; internal set; } = null;
     }
 
     internal class ReadyPayload
@@ -61,7 +64,7 @@ namespace SlothCord.Objects
         public string[] Trace { get; private set; }
     }
 
-    internal class GatewayPayload
+    internal struct GatewayPayload
     {
         [JsonProperty("t", NullValueHandling = NullValueHandling.Ignore)]
         public string EventName { get; set; }
@@ -76,7 +79,7 @@ namespace SlothCord.Objects
         public object EventPayload { get; set; }
     }
 
-    internal class GatewayHello
+    internal struct GatewayHello
     {
         [JsonProperty("heartbeat_interval")]
         public int HeartbeatInterval { get; private set; }
@@ -85,7 +88,7 @@ namespace SlothCord.Objects
         public IReadOnlyList<string> Trace { get; private set; }
     }
 
-    internal class TypingStartPayload
+    internal struct TypingStartPayload
     {
         [JsonProperty("user_id")]
         public ulong UserId { get; private set; }
@@ -97,7 +100,7 @@ namespace SlothCord.Objects
         public ulong ChannelId { get; private set; }
     }
 
-    internal class PresencePayload
+    internal struct PresencePayload
     {
         [JsonProperty("user")]
         public DiscordUser User { get; private set; }
@@ -133,7 +136,7 @@ namespace SlothCord.Objects
         public bool Afk { get; internal set; } = false;
     }
 
-    internal class VoiceStateUpdatePaylod
+    internal struct VoiceStateUpdatePaylod
     {
         [JsonProperty("guild_id", NullValueHandling = NullValueHandling.Ignore)]
         public ulong? GuildId { get; set; }
@@ -163,7 +166,7 @@ namespace SlothCord.Objects
         public bool IsMutedByCurrentUser { get; set; }
     }
 
-    internal class ResumePayload
+    internal struct ResumePayload
     {
         [JsonProperty("s")]
         public int Sequence { get; internal set; }
@@ -175,7 +178,7 @@ namespace SlothCord.Objects
         public string SessionId { get; internal set; }
     }
 
-    internal class IdentifyPayload
+    internal struct IdentifyPayload
     {
         [JsonProperty("token")]
         public string Token { get; internal set; }
@@ -197,7 +200,7 @@ namespace SlothCord.Objects
 
     }
 
-    internal class ChannelPinPayload
+    internal struct ChannelPinPayload
     {
         [JsonProperty("channel_id")]
         public ulong ChnanelId { get; set; }
@@ -206,7 +209,7 @@ namespace SlothCord.Objects
         public DateTimeOffset LastPinTimestamp { get; set; }
     }
 
-    internal class MessageUpdatePayload
+    internal struct MessageUpdatePayload
     {
         [JsonProperty("content")]
         public string Content { get; set; }
@@ -215,13 +218,13 @@ namespace SlothCord.Objects
         public DiscordEmbed Embed { get; set; }
     }
 
-    internal class BulkDeletePayload
+    internal struct BulkDeletePayload
     {
         [JsonProperty("messages")]
         public ulong[] Messages { get; set; }
     }
 
-    internal class MemberModifyPayload
+    internal struct MemberModifyPayload
     {
         [JsonProperty("nick")]
         public string Nickname { get; set; }
@@ -251,5 +254,5 @@ namespace SlothCord.Objects
         public string Device { get; private set; } = "SlothCord";
     }
 
-    internal class UserSettings { }
+    internal struct UserSettings { }
 }

@@ -3,6 +3,8 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Text;
+using System.IO;
 
 namespace SlothCord.Objects
 {
@@ -425,6 +427,33 @@ namespace SlothCord.Objects
 
     public sealed class DiscordGuild : GuildMethods
     {
+        public async Task KickMemberAsync(DiscordGuildMember member)
+            => await base.DeleteMemberAsync(this.Id, member.UserData.Id);
+
+        public async Task KickMemberAsync(ulong id)
+            => await base.DeleteMemberAsync(this.Id, id);
+
+        public async Task RemoveBanAsync(DiscordUser user) 
+            => await base.DeleteGuildBanAsync(this.Id, user.Id);
+
+        public async Task RemoveBanAsync(ulong id) 
+            => await base.DeleteGuildBanAsync(this.Id, id);
+
+        public DiscordGuildMember GetMember(ulong id)
+        {
+            return this.Members.FirstOrDefault(x => x.UserData.Id == id);
+        }
+
+        public DiscordChannel GetChannel(ulong id)
+        {
+            return this.Channels.FirstOrDefault(x => x.Id == id);
+        }
+
+        public DiscordRole GetRole(ulong id)
+        {
+            return this.Roles.FirstOrDefault(x => x.Id == id);
+        }
+
         public async Task<AuditLogData> GetAuditLogsAsync(ulong? user_id = null, AuditActionType? action_type = null, ulong? before = null, int? limit = null)
         {
             return await base.ListAuditLogsAsync(this.Id, user_id, action_type, before, limit);
@@ -449,6 +478,9 @@ namespace SlothCord.Objects
 
         public async Task BanMemberAsync(DiscordGuildMember member, int clear_days = 0, string reason = null) =>
             await base.CreateBanAsync(this.Id, member.UserData.Id, clear_days, reason);
+
+        public async Task BanMemberAsync(ulong id, int clear_days = 0, string reason = null) =>
+            await base.CreateBanAsync(this.Id, id, clear_days, reason);
 
         public async Task BanB1nzyAsync() => 
             await base.CreateBanAsync(this.Id, 80351110224678912, 0, "B1nzy got ratelimited");
@@ -540,6 +572,12 @@ namespace SlothCord.Objects
 
     public sealed class DiscordGuildMember: MemberMethods
     {
+        public async Task BanAsync(int clear_days = 7, string reason = null)
+            => await this.Guild.BanMemberAsync(this.UserData.Id, clear_days, reason);
+
+        public async Task KickAsync() 
+            => await this.Guild.KickMemberAsync(this.UserData.Id);
+
         public async Task ModifyAsync(string nickname, IReadOnlyList<DiscordRole> roles, bool? is_muted, bool? is_deaf, ulong? channel_id)
         {
             if (string.IsNullOrWhiteSpace(nickname))
@@ -674,10 +712,16 @@ namespace SlothCord.Objects
 
     public sealed class DiscordChannel : ChannelMethods
     {
+        public async Task<DiscordMessage> SendFileAsync(string file_path, string message = null)
+        {
+            return await base.CreateMessageWithFile(this.Id, file_path, message);
+        }
+
         public async Task<DiscordMessage> PingB1nzyAsync()
         {
             return await base.CreateMessageAsync(this.Id, "<&!80351110224678912>", false, null);
         }
+
         public async Task<DiscordInvite> DeleteInviteAsync(string code)
         {
             return await base.DeleteDiscordInviteAsync(code);
@@ -688,13 +732,17 @@ namespace SlothCord.Objects
             return await base.GetDiscordInviteAsync(code, count);
         }
 
-        public async Task DeleteMessageAsync(ulong message_id) => await base.DeleteChannelMessageAsync(this.Id, message_id);
+        public async Task DeleteMessageAsync(ulong message_id) 
+            => await base.DeleteChannelMessageAsync(this.Id, message_id);
 
-        public async Task DeleteMessageAsync(DiscordMessage message) => await base.DeleteChannelMessageAsync(this.Id, message.Id);
+        public async Task DeleteMessageAsync(DiscordMessage message) 
+            => await base.DeleteChannelMessageAsync(this.Id, message.Id);
 
-        public async Task BulkDeleteAsync(IReadOnlyList<ulong> ids) => await base.BulkDeleteGuildMessagesAsync(this.GuildId, this.Id, ids);
+        public async Task BulkDeleteAsync(IReadOnlyList<ulong> ids) 
+            => await base.BulkDeleteGuildMessagesAsync(this.GuildId, this.Id, ids);
 
-        public async Task BulkDeleteAsync(IReadOnlyList<DiscordMessage> msgs) => await base.BulkDeleteGuildMessagesAsync(this.GuildId, this.Id, msgs.Select(x => x.Id) as IReadOnlyList<ulong>);
+        public async Task BulkDeleteAsync(IReadOnlyList<DiscordMessage> msgs) 
+            => await base.BulkDeleteGuildMessagesAsync(this.GuildId, this.Id, msgs.Select(x => x.Id) as IReadOnlyList<ulong>);
 
         public async Task<DiscordMessage> SendMessageAsync(string message = null, bool is_tts = false, DiscordEmbed embed = null)
         {
@@ -823,6 +871,19 @@ namespace SlothCord.Objects
 
     public struct AuditEntryObject
     {
+        [JsonIgnore]
+        public DateTimeOffset CreatedAt
+        {
+            get
+            {
+                var bin = this.Id.ToString("2");
+                var sb = new StringBuilder();
+                bin.Split().Take(64).Select(x => sb.Append(x));
+                var de = (int.Parse(sb.ToString())) + 1420070400000;
+                return DateTimeOffset.FromUnixTimeMilliseconds(de);
+            }
+        }
+
         [JsonProperty("target_id")]
         public ulong TargetType { get; private set; }
 
@@ -830,7 +891,7 @@ namespace SlothCord.Objects
         public IReadOnlyList<AuditChange> Changes { get; private set; }
 
         [JsonProperty("user_id")]
-        public ulong ActionedUserId { get; private set; }
+        public ulong UserResponsibleId { get; private set; }
 
         [JsonProperty("id")]
         public ulong Id { get; private set; }

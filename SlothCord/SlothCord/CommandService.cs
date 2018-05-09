@@ -174,7 +174,7 @@ namespace SlothCord.Commands
                     return;
                 }
                 Args.Remove(Args[0]);
-                await ExecuteCommandAsync(client, msg, Args, cmd, context);
+                await ExecuteCommandAsync(client, msg, Args, cmd.Method.GetParameters(), cmd, context);
             }
             else
             {
@@ -216,12 +216,14 @@ namespace SlothCord.Commands
                 }
                 if (cmd != group.GroupExecuteCommand) Args.Remove(Args[0]);
 
-                await ExecuteCommandAsync(client, msg, Args, cmd, context);
+                await ExecuteCommandAsync(client, msg, Args, cmd.Method.GetParameters(), cmd, context);
             }
         }
         
-        internal Task ExecuteCommandAsync(DiscordClient client, DiscordMessage msg, List<object> Args, SlothUserCommand cmd, SlothCommandContext context)
+        internal Task ExecuteCommandAsync(DiscordClient client, DiscordMessage msg, List<object> Args, IEnumerable<ParameterInfo> TargetArgs, SlothUserCommand cmd, SlothCommandContext context)
         {
+            var RequiredArgs = TargetArgs.ToList();
+            if (RequiredArgs[0].ParameterType == typeof(SlothCommandContext)) RequiredArgs.Remove(RequiredArgs[0]);
             if (cmd.Method.HasAttribute<RequireOwnerAttribute>() && (msg.Author.Id != client.CurrentUser.Id)) return Task.CompletedTask;
             if(!AllowDmCommands && !client.Guilds.Any(x => x.Channels.Any(a => a.Id == msg.ChannelId))) return Task.CompletedTask;
 
@@ -256,14 +258,19 @@ namespace SlothCord.Commands
                         var strid = new Regex(@"((<@)(?:!))").Replace(Args[i] as string, "").Replace(">", "");
                         var id = ulong.Parse(strid);
                         var cachedUser = client.InternalUserCache?.FirstOrDefault(x => x.Id == id);
-                        if (context.Member != null && currentarg.GetType() == typeof(DiscordGuildMember)) currentarg = context.Member;
+                        if (RequiredArgs[i].ParameterType == typeof(DiscordGuildMember)) currentarg = context.Guild.Members.FirstOrDefault(x => x.UserData.Id == id);
                         else if (cachedUser != null) currentarg = cachedUser;
+                        else currentarg = currentarg as string;
                     }
-                    else
+                    else if(new Regex(@"([\d]{18,20})").IsMatch(currentarg as string))
                     {
-                        var type = cmd.Parameters[pos].ParameterType;
-                        currentarg = Convert.ChangeType(Args[i], type);
+                        var id = ulong.Parse(currentarg as string);
+                        var cachedUser = client.InternalUserCache?.FirstOrDefault(x => x.Id == id);
+                        if (RequiredArgs[i].ParameterType == typeof(DiscordGuildMember)) currentarg = context.Guild.Members.FirstOrDefault(x => x.UserData.Id == id);
+                        else if (cachedUser != null) currentarg = cachedUser;
+                        else currentarg = currentarg as string;
                     }
+                    else currentarg = Convert.ChangeType(Args[i], RequiredArgs[i].ParameterType);
                 }
                 passargs.Add(currentarg);
             }
