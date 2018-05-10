@@ -247,6 +247,7 @@ namespace SlothCord.Commands
                     var sb = new StringBuilder();
                     for (var o = 0; o < Args.Count; o++)
                             sb.Append($" {Args[o]}");
+                    //Should add a thing to parse into [RemainingString]string[] array
                     passargs.Add(sb.ToString());
                     break;
                 }

@@ -16,7 +16,7 @@ namespace SlothCord.Objects
 
         protected internal static WebSocket WebSocketClient { get; set; }
 
-        protected internal static Uri _baseAddress = new Uri("https://discordapp.com/api/v6");
+        protected internal static Uri _baseAddress = new Uri("https://discordapp.com/api/v7");
 
         protected internal async Task<string> RetryAsync(int retry_in, HttpRequestMessage msg)
         {
@@ -292,7 +292,7 @@ namespace SlothCord.Objects
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) { await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg); }
         }
 
-        internal async Task<IReadOnlyList<DiscordMessage>> GetMultipleMessagesAsync(ulong channel_id, int limit = 50, ulong? around = null, ulong? after = null, ulong? before = null)
+        internal async Task<IReadOnlyList<DiscordMessage>> GetMultipleMessagesAsync(ulong channel_id, int limit = 100, ulong? around = null, ulong? after = null, ulong? before = null)
         {
             var requeststring = $"{_baseAddress}/channels/{channel_id}/messages?limit={limit}";
             if (around != null)

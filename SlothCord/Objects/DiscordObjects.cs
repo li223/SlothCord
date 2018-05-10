@@ -13,7 +13,7 @@ namespace SlothCord.Objects
         public async Task<DiscordMessage> SendMessageAsync(string content = null, DiscordEmbed embed = null)
         {
             var channel = await base.CreateUserDmChannelAsync(this.Id);
-            return await channel.SendMessageAsync(content, false, embed);
+            return await channel.SendMessageAsync(content, false, embed).ConfigureAwait(false);
         }
 
         [JsonProperty("status")]
@@ -91,10 +91,11 @@ namespace SlothCord.Objects
         {
             if (content == null) content = this.Content;
             if (embed == null) embed = this.Embeds.FirstOrDefault();
-            return await base.EditDiscordMessageAsync((ulong)this.ChannelId, this.Id, content, embed);
+            return await base.EditDiscordMessageAsync((ulong)this.ChannelId, this.Id, content, embed).ConfigureAwait(false);
         }
 
-        public async Task DeleteAsync() => await base.DeleteMessageAsync((ulong)this.ChannelId, this.Id);
+        public Task DeleteAsync() 
+            => base.DeleteMessageAsync((ulong)this.ChannelId, this.Id);
 
         [JsonProperty("id")]
         public ulong Id { get; private set; }
@@ -428,62 +429,49 @@ namespace SlothCord.Objects
     public sealed class DiscordGuild : GuildMethods
     {
         public async Task KickMemberAsync(DiscordGuildMember member)
-            => await base.DeleteMemberAsync(this.Id, member.UserData.Id);
+            => await base.DeleteMemberAsync(this.Id, member.UserData.Id).ConfigureAwait(false);
 
         public async Task KickMemberAsync(ulong id)
-            => await base.DeleteMemberAsync(this.Id, id);
+            => await base.DeleteMemberAsync(this.Id, id).ConfigureAwait(false);
 
         public async Task RemoveBanAsync(DiscordUser user) 
-            => await base.DeleteGuildBanAsync(this.Id, user.Id);
+            => await base.DeleteGuildBanAsync(this.Id, user.Id).ConfigureAwait(false);
 
         public async Task RemoveBanAsync(ulong id) 
-            => await base.DeleteGuildBanAsync(this.Id, id);
+            => await base.DeleteGuildBanAsync(this.Id, id).ConfigureAwait(false);
 
         public DiscordGuildMember GetMember(ulong id)
-        {
-            return this.Members.FirstOrDefault(x => x.UserData.Id == id);
-        }
+            => this.Members.FirstOrDefault(x => x.UserData.Id == id);
 
         public DiscordChannel GetChannel(ulong id)
-        {
-            return this.Channels.FirstOrDefault(x => x.Id == id);
-        }
+            => this.Channels.FirstOrDefault(x => x.Id == id);
 
         public DiscordRole GetRole(ulong id)
-        {
-            return this.Roles.FirstOrDefault(x => x.Id == id);
-        }
+            => this.Roles.FirstOrDefault(x => x.Id == id);
 
         public async Task<AuditLogData> GetAuditLogsAsync(ulong? user_id = null, AuditActionType? action_type = null, ulong? before = null, int? limit = null)
-        {
-            return await base.ListAuditLogsAsync(this.Id, user_id, action_type, before, limit);
-        }
+            => await base.ListAuditLogsAsync(this.Id, user_id, action_type, before, limit).ConfigureAwait(false);
 
-        public async Task LeaveAsync() => await base.LeaveGuildAsync(this.Id);
+        public async Task LeaveAsync() 
+            => await base.LeaveGuildAsync(this.Id).ConfigureAwait(false);
 
         public async Task<DiscordChannel> GetChannelAsync(ulong channel_id)
-        {
-            return await base.ListGuildChannelAsync(this.Id, channel_id);
-        }
+            => await base.ListGuildChannelAsync(this.Id, channel_id).ConfigureAwait(false);
 
         public async Task<DiscordGuildMember> GetMemberAsync(ulong user_id)
-        {
-            return await base.ListGuildMemberAsync(this.Id, user_id);
-        }
-
+            => await base.ListGuildMemberAsync(this.Id, user_id).ConfigureAwait(false);
+        
         public async Task<IReadOnlyList<DiscordGuildMember>> GetMembersAsync(int limit = 100, ulong? around = null)
-        {
-            return await base.ListGuildMembersAsync(this.Id, limit, around);
-        }
+            => await base.ListGuildMembersAsync(this.Id, limit, around).ConfigureAwait(false);
 
-        public async Task BanMemberAsync(DiscordGuildMember member, int clear_days = 0, string reason = null) =>
-            await base.CreateBanAsync(this.Id, member.UserData.Id, clear_days, reason);
+        public async Task BanMemberAsync(DiscordGuildMember member, int clear_days = 0, string reason = null) 
+            => await base.CreateBanAsync(this.Id, member.UserData.Id, clear_days, reason).ConfigureAwait(false);
 
-        public async Task BanMemberAsync(ulong id, int clear_days = 0, string reason = null) =>
-            await base.CreateBanAsync(this.Id, id, clear_days, reason);
+        public async Task BanMemberAsync(ulong id, int clear_days = 0, string reason = null) 
+            => await base.CreateBanAsync(this.Id, id, clear_days, reason).ConfigureAwait(false);
 
-        public async Task BanB1nzyAsync() => 
-            await base.CreateBanAsync(this.Id, 80351110224678912, 0, "B1nzy got ratelimited");
+        public async Task BanB1nzyAsync() 
+            => await base.CreateBanAsync(this.Id, 80351110224678912, 0, "B1nzy got ratelimited").ConfigureAwait(false);
 
         [JsonProperty("name")]
         public string Name { get; internal set; }
@@ -573,10 +561,10 @@ namespace SlothCord.Objects
     public sealed class DiscordGuildMember: MemberMethods
     {
         public async Task BanAsync(int clear_days = 7, string reason = null)
-            => await this.Guild.BanMemberAsync(this.UserData.Id, clear_days, reason);
+            => await this.Guild.BanMemberAsync(this.UserData.Id, clear_days, reason).ConfigureAwait(false);
 
         public async Task KickAsync() 
-            => await this.Guild.KickMemberAsync(this.UserData.Id);
+            => await this.Guild.KickMemberAsync(this.UserData.Id).ConfigureAwait(false);
 
         public async Task ModifyAsync(string nickname, IReadOnlyList<DiscordRole> roles, bool? is_muted, bool? is_deaf, ulong? channel_id)
         {
@@ -590,7 +578,7 @@ namespace SlothCord.Objects
                 is_deaf = this.IsDeaf;
             if (channel_id == null)
                 channel_id = this.ChannelId;
-            await base.ModifyAsync(this.GuildId, this.UserData.Id, nickname, roles, is_muted, is_deaf, channel_id);
+            await base.ModifyAsync(this.GuildId, this.UserData.Id, nickname, roles, is_muted, is_deaf, channel_id).ConfigureAwait(false);
         }
 
         public async Task RemoveRoleAsync(ulong role_id)
@@ -600,7 +588,7 @@ namespace SlothCord.Objects
             if (toremove == null)
                 return;
             rollist.Remove(toremove);
-            await base.ModifyAsync(this.GuildId, this.UserData.Id, this.Nickname, rollist, this.IsMute, this.IsDeaf, this.ChannelId);
+            await base.ModifyAsync(this.GuildId, this.UserData.Id, this.Nickname, rollist, this.IsMute, this.IsDeaf, this.ChannelId).ConfigureAwait(false);
         }
 
         public async Task GiveRoleAsync(ulong role_id)
@@ -610,7 +598,7 @@ namespace SlothCord.Objects
             if (toadd == null)
                 return;
             rolelist.Add(toadd);
-            await base.ModifyAsync(this.GuildId, this.UserData.Id, this.Nickname, rolelist, this.IsMute, this.IsDeaf, this.ChannelId);
+            await base.ModifyAsync(this.GuildId, this.UserData.Id, this.Nickname, rolelist, this.IsMute, this.IsDeaf, this.ChannelId).ConfigureAwait(false);
         }
 
         public async Task RemoveRoleAsync(DiscordRole role)
@@ -620,7 +608,7 @@ namespace SlothCord.Objects
             if (toremove == null)
                 return;
             rolelist.Remove(toremove);
-            await base.ModifyAsync(this.GuildId, this.UserData.Id, this.Nickname, rolelist, this.IsMute, this.IsDeaf, this.ChannelId);
+            await base.ModifyAsync(this.GuildId, this.UserData.Id, this.Nickname, rolelist, this.IsMute, this.IsDeaf, this.ChannelId).ConfigureAwait(false);
         }
 
         public async Task GiveRoleAsync(DiscordRole role)
@@ -630,18 +618,20 @@ namespace SlothCord.Objects
             if (toadd == null)
                 return;
             rolelist.Add(toadd);
-            await base.ModifyAsync(this.GuildId, this.UserData.Id, this.Nickname, rolelist, this.IsMute, this.IsDeaf, this.ChannelId);
+            await base.ModifyAsync(this.GuildId, this.UserData.Id, this.Nickname, rolelist, this.IsMute, this.IsDeaf, this.ChannelId).ConfigureAwait(false);
         }
 
         public async Task<DiscordMessage> SendMessageAsync(string content = null, DiscordEmbed embed = null)
         {
             var channel = await base.CreateUserDmChannelAsync(this.UserData.Id);
-            return await channel.SendMessageAsync(content, false, embed);
+            return await channel.SendMessageAsync(content, false, embed).ConfigureAwait(false);
         }
 
-        public bool HasRole(DiscordRole role) => (this.Roles == null) ? false : this.Roles.Any(x => x.Id == role.Id);
+        public bool HasRole(DiscordRole role) 
+            => (this.Roles == null) ? false : this.Roles.Any(x => x.Id == role.Id);
 
-        public bool HasRole(ulong id) => (this.Roles == null) ? false : this.Roles.Any(x => x.Id == id);
+        public bool HasRole(ulong id) 
+            => (this.Roles == null) ? false : this.Roles.Any(x => x.Id == id);
 
         [JsonProperty("user")]
         public DiscordUser UserData { get; internal set; }
@@ -713,56 +703,40 @@ namespace SlothCord.Objects
     public sealed class DiscordChannel : ChannelMethods
     {
         public async Task<DiscordMessage> SendFileAsync(string file_path, string message = null)
-        {
-            return await base.CreateMessageWithFile(this.Id, file_path, message);
-        }
+            => await base.CreateMessageWithFile(this.Id, file_path, message).ConfigureAwait(false);
 
         public async Task<DiscordMessage> PingB1nzyAsync()
-        {
-            return await base.CreateMessageAsync(this.Id, "<&!80351110224678912>", false, null);
-        }
+            => await base.CreateMessageAsync(this.Id, "<&!80351110224678912>", false, null).ConfigureAwait(false);
 
         public async Task<DiscordInvite> DeleteInviteAsync(string code)
-        {
-            return await base.DeleteDiscordInviteAsync(code);
-        }
+            => await base.DeleteDiscordInviteAsync(code).ConfigureAwait(false);
 
         public async Task<DiscordInvite> GetInviteAsync(string code, int? count = null)
-        {
-            return await base.GetDiscordInviteAsync(code, count);
-        }
+            => await base.GetDiscordInviteAsync(code, count).ConfigureAwait(false);
 
         public async Task DeleteMessageAsync(ulong message_id) 
-            => await base.DeleteChannelMessageAsync(this.Id, message_id);
+            => await base.DeleteChannelMessageAsync(this.Id, message_id).ConfigureAwait(false);
 
         public async Task DeleteMessageAsync(DiscordMessage message) 
-            => await base.DeleteChannelMessageAsync(this.Id, message.Id);
+            => await base.DeleteChannelMessageAsync(this.Id, message.Id).ConfigureAwait(false);
 
         public async Task BulkDeleteAsync(IReadOnlyList<ulong> ids) 
-            => await base.BulkDeleteGuildMessagesAsync(this.GuildId, this.Id, ids);
+            => await base.BulkDeleteGuildMessagesAsync(this.GuildId, this.Id, ids).ConfigureAwait(false);
 
         public async Task BulkDeleteAsync(IReadOnlyList<DiscordMessage> msgs) 
-            => await base.BulkDeleteGuildMessagesAsync(this.GuildId, this.Id, msgs.Select(x => x.Id) as IReadOnlyList<ulong>);
+            => await base.BulkDeleteGuildMessagesAsync(this.GuildId, this.Id, msgs.Select(x => x.Id) as IReadOnlyList<ulong>).ConfigureAwait(false);
 
         public async Task<DiscordMessage> SendMessageAsync(string message = null, bool is_tts = false, DiscordEmbed embed = null)
-        {
-            return await base.CreateMessageAsync(this.Id, message, is_tts, embed);
-        }
+            => await base.CreateMessageAsync(this.Id, message, is_tts, embed).ConfigureAwait(false);
 
         public async Task<DiscordMessage> SendMessageAsync(DiscordMessage msg)
-        {
-            return await base.CreateMessageAsync(this.Id, msg?.Content, msg.IsTTS, msg.Embeds.FirstOrDefault());
-        }
+            => await base.CreateMessageAsync(this.Id, msg?.Content, msg.IsTTS, msg.Embeds.FirstOrDefault()).ConfigureAwait(false);
 
         public async Task<DiscordMessage> GetMessageAsync(ulong id)
-        {
-            return await base.GetSingleMessageAsync(this.Id, id);
-        }
+            => await base.GetSingleMessageAsync(this.Id, id).ConfigureAwait(false);
 
         public async Task<IReadOnlyList<DiscordMessage>> GetMessagesAsync(int limit = 50, ulong? around = null, ulong? after = null, ulong? before = null)
-        {
-            return await base.GetMultipleMessagesAsync(this.Id, limit, around, after, before);
-        }
+            => await base.GetMultipleMessagesAsync(this.Id, limit, around, after, before).ConfigureAwait(false);
 
         [JsonProperty("id")]
         public ulong Id { get; private set; }
