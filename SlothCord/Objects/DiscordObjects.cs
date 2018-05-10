@@ -12,7 +12,7 @@ namespace SlothCord.Objects
     {
         public async Task<DiscordMessage> SendMessageAsync(string content = null, DiscordEmbed embed = null)
         {
-            var channel = await base.CreateUserDmChannelAsync(this.Id);
+            var channel = await base.CreateUserDmChannelAsync(this.Id).ConfigureAwait(false);
             return await channel.SendMessageAsync(content, false, embed).ConfigureAwait(false);
         }
 
@@ -623,7 +623,7 @@ namespace SlothCord.Objects
 
         public async Task<DiscordMessage> SendMessageAsync(string content = null, DiscordEmbed embed = null)
         {
-            var channel = await base.CreateUserDmChannelAsync(this.UserData.Id);
+            var channel = await base.CreateUserDmChannelAsync(this.UserData.Id).ConfigureAwait(false);
             return await channel.SendMessageAsync(content, false, embed).ConfigureAwait(false);
         }
 

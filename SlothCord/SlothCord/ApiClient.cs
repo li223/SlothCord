@@ -23,9 +23,9 @@ namespace SlothCord.Objects
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Gateway Ratelimit Reached, waiting {retry_in}ms");
             Console.ForegroundColor = ConsoleColor.White;
-            await Task.Delay(retry_in);
-            var response = await _httpClient.SendAsync(msg);
-            var content = await response.Content.ReadAsStringAsync();
+            await Task.Delay(retry_in).ConfigureAwait(false);
+            var response = await _httpClient.SendAsync(msg).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             return content;
         }
     }
@@ -45,13 +45,13 @@ namespace SlothCord.Objects
             {
                 Content = new StringContent(JsonConvert.SerializeObject(obj))
             };
-            var response = await _httpClient.SendAsync(msg);
-            var rescont = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.SendAsync(msg).ConfigureAwait(false);
+            var rescont = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordMessage>(rescont);
             else
             {
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
-                    return JsonConvert.DeserializeObject<DiscordMessage>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg));
+                    return JsonConvert.DeserializeObject<DiscordMessage>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg).ConfigureAwait(false));
                 else throw new Exception($"Returned Message: {rescont}");
             }
         }
@@ -59,12 +59,12 @@ namespace SlothCord.Objects
         internal async Task DeleteMessageAsync(ulong channel_id, ulong message_id)
         {
             var msg = new HttpRequestMessage(HttpMethod.Delete, new Uri($"{_baseAddress}/channels/{channel_id}/messages/{message_id}"));
-            var response = await _httpClient.SendAsync(msg);
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.SendAsync(msg).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
-                    await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg);
+                    await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg).ConfigureAwait(false);
             }
 
         }
@@ -75,31 +75,31 @@ namespace SlothCord.Objects
         internal async Task DeleteMemberAsync(ulong guild_id, ulong member_id)
         {
             var msg = new HttpRequestMessage(HttpMethod.Delete, new Uri($"{_baseAddress}/guilds/{guild_id}/members/{member_id}"));
-            var response = await _httpClient.SendAsync(msg);
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.SendAsync(msg).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
-                    await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg);
+                    await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg).ConfigureAwait(false);
         }
 
         internal async Task DeleteGuildBanAsync(ulong guild_id, ulong user_id)
         {
             var msg = new HttpRequestMessage(HttpMethod.Delete, new Uri($"{_baseAddress}/guilds/{guild_id}/bans/{user_id}"));
-            var response = await _httpClient.SendAsync(msg);
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.SendAsync(msg).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
-                    await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg);
+                    await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg).ConfigureAwait(false);
         }
 
         internal async Task LeaveGuildAsync(ulong guild_id)
         {
             var msg = new HttpRequestMessage(HttpMethod.Delete, new Uri($"{_baseAddress}/users/@me/guilds/{guild_id}"));
-            var response = await _httpClient.SendAsync(msg);
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.SendAsync(msg).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
-                    await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg);
+                    await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg).ConfigureAwait(false);
         }
 
         internal async Task CreateBanAsync(ulong guild_id, ulong member_id, int clear_days = 0, string reason = null)
@@ -110,11 +110,11 @@ namespace SlothCord.Objects
             if (reason != null)
                 query += $"&reason={reason}";
             var request = new HttpRequestMessage(HttpMethod.Put, new Uri(query));
-            var response = await _httpClient.SendAsync(request);
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
-                    await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), request);
+                    await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), request).ConfigureAwait(false);
         }
 
         internal async Task<IReadOnlyList<DiscordGuildMember>> ListGuildMembersAsync(ulong guild_id, int limit = 100, ulong? around = null)
@@ -123,8 +123,8 @@ namespace SlothCord.Objects
             if (around != null)
                 requeststring += $"&around={around}";
             var msg = new HttpRequestMessage(HttpMethod.Get, new Uri(requeststring));
-            var response = await _httpClient.SendAsync(msg);
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.SendAsync(msg).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.IsSuccessStatusCode)
             {
                 var members = JsonConvert.DeserializeObject<List<DiscordGuildMember>>(content);
@@ -134,7 +134,7 @@ namespace SlothCord.Objects
             else
             {
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
-                    return JsonConvert.DeserializeObject<IReadOnlyList<DiscordGuildMember>>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg));
+                    return JsonConvert.DeserializeObject<IReadOnlyList<DiscordGuildMember>>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg).ConfigureAwait(false));
                 else return null;
             }
         }
@@ -142,8 +142,8 @@ namespace SlothCord.Objects
         internal async Task<DiscordGuildMember> ListGuildMemberAsync(ulong guild_id, ulong member_id)
         {
             var msg = new HttpRequestMessage(HttpMethod.Get, new Uri($"{_baseAddress}/guilds/{guild_id}/members/{member_id}"));
-            var response = await _httpClient.SendAsync(msg);
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.SendAsync(msg).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.IsSuccessStatusCode)
             {
                 var member = JsonConvert.DeserializeObject<DiscordGuildMember>(content);
@@ -153,7 +153,7 @@ namespace SlothCord.Objects
             else
             {
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
-                    return JsonConvert.DeserializeObject<DiscordGuildMember>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg));
+                    return JsonConvert.DeserializeObject<DiscordGuildMember>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg).ConfigureAwait(false));
                 else return null;
             }
         }
@@ -161,8 +161,8 @@ namespace SlothCord.Objects
         internal async Task<DiscordChannel> ListGuildChannelAsync(ulong guild_id, ulong channel_id)
         {
             var msg = new HttpRequestMessage(HttpMethod.Get, new Uri($"{_baseAddress}/channels/{channel_id}"));
-            var response = await _httpClient.SendAsync(msg);
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.SendAsync(msg).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.IsSuccessStatusCode)
             {
                 var channel = JsonConvert.DeserializeObject<DiscordChannel>(content);
@@ -172,7 +172,7 @@ namespace SlothCord.Objects
             else
             {
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
-                    return JsonConvert.DeserializeObject<DiscordChannel>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg));
+                    return JsonConvert.DeserializeObject<DiscordChannel>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg).ConfigureAwait(false));
                 else return null;
             }
         }
@@ -207,7 +207,7 @@ namespace SlothCord.Objects
             else
             {
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
-                    return JsonConvert.DeserializeObject<AuditLogData>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg));
+                    return JsonConvert.DeserializeObject<AuditLogData>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg).ConfigureAwait(false));
                 else return null;
             }
         }
@@ -231,31 +231,31 @@ namespace SlothCord.Objects
             {
                 Content = new StringContent(jsondata, Encoding.UTF8, "multipart/form-data")
             };
-            var response = await _httpClient.SendAsync(request);
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordMessage>(content);
-            else if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) return JsonConvert.DeserializeObject<DiscordMessage>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), request));
+            else if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) return JsonConvert.DeserializeObject<DiscordMessage>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), request).ConfigureAwait(false));
             else return null;
         }
 
         internal async Task DeleteChannelMessageAsync(ulong channel_id, ulong message_id)
         {
             var msg = new HttpRequestMessage(HttpMethod.Delete, new Uri($"{_baseAddress}/channels/{channel_id}/messages/{message_id}"));
-            var response = await _httpClient.SendAsync(msg);
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.SendAsync(msg).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
-                    await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg);
+                    await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg).ConfigureAwait(false);
         }
 
         internal async Task<DiscordInvite> DeleteDiscordInviteAsync(string code, int? with_counts = null)
         {
             var msg = new HttpRequestMessage(HttpMethod.Delete, new Uri($"{_baseAddress}/invites/{code}"));
-            var response = await _httpClient.SendAsync(msg);
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.SendAsync(msg).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
-                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) { return JsonConvert.DeserializeObject<DiscordInvite>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg)); }
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) { return JsonConvert.DeserializeObject<DiscordInvite>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg).ConfigureAwait(false)); }
                 else { return null; }
             }
             else return null;
@@ -286,10 +286,10 @@ namespace SlothCord.Objects
             {
                 Content = new StringContent(JsonConvert.SerializeObject(ids))
             };
-            var response = await _httpClient.SendAsync(msg);
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.SendAsync(msg).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
-                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) { await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg); }
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) { await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg).ConfigureAwait(false); }
         }
 
         internal async Task<IReadOnlyList<DiscordMessage>> GetMultipleMessagesAsync(ulong channel_id, int limit = 100, ulong? around = null, ulong? after = null, ulong? before = null)
@@ -301,24 +301,24 @@ namespace SlothCord.Objects
                 requeststring += $"&before={before}";
             if (after != null)
                 requeststring += $"&after={after}";
-            var response = await _httpClient.GetAsync(new Uri(requeststring));
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.GetAsync(new Uri(requeststring)).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<IReadOnlyList<DiscordMessage>>(content);
             else return null;
         }
 
         internal async Task<DiscordMessage> GetSingleMessageAsync(ulong channel_id, ulong message_id)
         {
-            var response = await _httpClient.GetAsync(new Uri($"{_baseAddress}/channels/{channel_id}/messages/{message_id}"));
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.GetAsync(new Uri($"{_baseAddress}/channels/{channel_id}/messages/{message_id}")).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordMessage>(content);
             else return null;
         }
 
         internal async Task<DiscordChannel> DeleteChannelAsync(ulong channel_id)
         {
-            var response = await _httpClient.DeleteAsync(new Uri($"{_baseAddress}/channels/{channel_id}"));
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.DeleteAsync(new Uri($"{_baseAddress}/channels/{channel_id}")).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordChannel>(content);
             else return null;
         }
@@ -343,10 +343,10 @@ namespace SlothCord.Objects
             {
                 Content = new StringContent(jsondata, Encoding.UTF8, "application/json")
             };
-            var response = await _httpClient.SendAsync(request);
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordMessage>(content);
-            else if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) return JsonConvert.DeserializeObject<DiscordMessage>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), request));
+            else if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) return JsonConvert.DeserializeObject<DiscordMessage>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), request).ConfigureAwait(false));
             else return null;
         }
     }
@@ -355,8 +355,8 @@ namespace SlothCord.Objects
     {
         internal async Task<DiscordChannel> CreateUserDmChannelAsync(ulong user_id)
         {
-            var response = await _httpClient.PostAsync($"{_baseAddress}/users/@me/channels?recipient_id={user_id}", null);
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.PostAsync($"{_baseAddress}/users/@me/channels?recipient_id={user_id}", null).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordChannel>(content);
             else return null;
         }
@@ -377,21 +377,21 @@ namespace SlothCord.Objects
                     ChannelId = channel_id
                 }))
             };
-            var response = await _httpClient.SendAsync(request);
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
-                    await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), request);
+                    await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), request).ConfigureAwait(false);
         }
 
         internal async Task<DiscordChannel> CreateUserDmChannelAsync(ulong user_id)
         {
             var request = new HttpRequestMessage(HttpMethod.Post, new Uri($"{_baseAddress}/users/@me/channels?recipient_id={user_id}"));
-            var response = await _httpClient.SendAsync(request);
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordChannel>(content);
             else if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
-                return JsonConvert.DeserializeObject<DiscordChannel>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), request));
+                return JsonConvert.DeserializeObject<DiscordChannel>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), request).ConfigureAwait(false));
             else return null;
         }
     }
