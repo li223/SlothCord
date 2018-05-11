@@ -776,6 +776,9 @@ namespace SlothCord.Objects
 
         [JsonProperty("owner_id", NullValueHandling = NullValueHandling.Ignore)]
         public ulong OwnerId { get; private set; }
+
+        [JsonIgnore]
+        public string Mention { get { return $"<#{this.Id}>"; } }
     }
 
     public struct Category

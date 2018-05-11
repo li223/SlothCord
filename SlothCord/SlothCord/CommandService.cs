@@ -216,16 +216,32 @@ namespace SlothCord.Commands
                 }
                 if (cmd != group.GroupExecuteCommand) Args.Remove(Args[0]);
 
-                await ExecuteCommandAsync(client, msg, Args, cmd.Method.GetParameters(), cmd, context);
+                await ExecuteCommandAsync(client, msg, Args, cmd.Method.GetParameters(), cmd, context).ConfigureAwait(false);
             }
         }
         
-        internal Task ExecuteCommandAsync(DiscordClient client, DiscordMessage msg, List<object> Args, IEnumerable<ParameterInfo> TargetArgs, SlothUserCommand cmd, SlothCommandContext context)
+        internal async Task ExecuteCommandAsync(DiscordClient client, DiscordMessage msg, List<object> Args, IEnumerable<ParameterInfo> TargetArgs, SlothUserCommand cmd, SlothCommandContext context)
         {
+            var precheck = cmd.Method.GetCustomAttribute(typeof(PreCheckAttribute));
+            if(precheck != null)
+            {
+                var result = await (precheck as PreCheckAttribute).ExecuteCommandAsync(context).ConfigureAwait(false);
+                if(!result)
+                {
+                    CommandErrored?.Invoke(this, new CommandErroredArgs()
+                    {
+                        Channel = context.Channel,
+                        Exception = new Exception("A pre-execution check failed"),
+                        Guild = context.Guild,
+                        Message = "A pre-execution check failed"
+                    });
+                    return;
+                }
+            }
             var RequiredArgs = TargetArgs.ToList();
             if (RequiredArgs[0].ParameterType == typeof(SlothCommandContext)) RequiredArgs.Remove(RequiredArgs[0]);
-            if (cmd.Method.HasAttribute<RequireOwnerAttribute>() && (msg.Author.Id != client.CurrentUser.Id)) return Task.CompletedTask;
-            if(!AllowDmCommands && !client.Guilds.Any(x => x.Channels.Any(a => a.Id == msg.ChannelId))) return Task.CompletedTask;
+            if (cmd.Method.HasAttribute<RequireOwnerAttribute>() && (msg.Author.Id != client.CurrentUser.Id)) return;
+            if(!AllowDmCommands && !client.Guilds.Any(x => x.Channels.Any(a => a.Id == msg.ChannelId))) return;
 
             var passargs = new List<object>();
             int pos = 0;
@@ -299,9 +315,10 @@ namespace SlothCord.Commands
                     Guild = context.Guild
                 });
             }
-            return Task.CompletedTask;
         }
     }
+
+#region Classes And Shit
 
     public class SlothCommandContext : ApiBase
     {
@@ -376,6 +393,13 @@ namespace SlothCord.Commands
     [AttributeUsage(AttributeTargets.Method)]
     public class RequireOwnerAttribute : Attribute { }
 
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
+    public class PreCheckAttribute : Attribute
+    {
+        public virtual Task<bool> ExecuteCommandAsync(SlothCommandContext ctx)
+            => Task.FromResult(true);
+    }
+
     public static class Extensions
     {
         public static bool HasAttribute<T>(this MethodInfo method)
@@ -383,4 +407,6 @@ namespace SlothCord.Commands
             return method.CustomAttributes.Any(x => x.AttributeType == typeof(T));
         }
     }
+
+    #endregion
 }

@@ -7,6 +7,7 @@ using System.Net.Http;
 using WebSocket4Net;
 using System.Text;
 using System.Threading.Tasks;
+using System.Net.Http.Headers;
 
 namespace SlothCord.Objects
 {
@@ -41,6 +42,7 @@ namespace SlothCord.Objects
                 Content = content,
                 Embed = embed
             };
+
             var msg = new HttpRequestMessage(HttpMethod.Put, new Uri($"{_baseAddress}/channels/{channel_id}/messages/{message_id}"))
             {
                 Content = new StringContent(JsonConvert.SerializeObject(obj))
@@ -219,18 +221,16 @@ namespace SlothCord.Objects
         {
             if (message?.Length > 2000)
                 throw new ArgumentException("Message cannot exceed 2000 characters");
-
+            var data = File.ReadAllBytes(file_path);
             var jsondata = JsonConvert.SerializeObject(new MessageCreatePayload()
             {
-                HasContent = message != null,
-                Content = message,
-                FileData = File.ReadAllBytes(file_path)
+                FileData = data
             });
-
             var request = new HttpRequestMessage(HttpMethod.Post, new Uri($"{_baseAddress}/channels/{channel_id}/messages"))
             {
-                Content = new StringContent(jsondata, Encoding.UTF8, "multipart/form-data")
+                Content = new StringContent(jsondata, Encoding.UTF8)
             };
+            request.Content.Headers.ContentType = new MediaTypeHeaderValue("multipart/form-data");
             var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordMessage>(content);

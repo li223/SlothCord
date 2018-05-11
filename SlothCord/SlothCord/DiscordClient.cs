@@ -248,10 +248,8 @@ namespace SlothCord
             var data = e as OnWebSocketClosedArgs;
             SocketClosed?.Invoke(this, data);
 #if NETCORE
-            await WebSocketClient.CloseAsync();
             await WebSocketClient.OpenAsync();
 #elif NETFX47
-            WebSocketClient.Close();
             WebSocketClient.Open();
 #endif
         }
@@ -433,7 +431,7 @@ namespace SlothCord
                                         }
                                         MessageCreated?.Invoke(this, msg);
                                         if (msg.Content.StartsWith(this.Commands.StringPrefix))
-                                            await Commands.ConvertArgumentsAsync(this, msg);
+                                            await Commands.ConvertArgumentsAsync(this, msg).ConfigureAwait(false);
                                         break;
                                     }
                                 case DispatchType.TYPING_START:

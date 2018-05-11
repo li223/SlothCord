@@ -15,23 +15,26 @@ namespace SlothCord.Objects
 
     internal class MessageCreatePayload
     {
-        [JsonProperty("has_content")]
-        public bool HasContent { get; internal set; } = false;
+        [JsonProperty("has_content", NullValueHandling = NullValueHandling.Ignore)]
+        public bool? HasContent { get; internal set; } = null;
 
         [JsonProperty("content", NullValueHandling = NullValueHandling.Ignore)]
         public string Content { get; internal set; } = null;
 
-        [JsonProperty("is_tts")]
-        public bool IsTTS { get; internal set; } = false;
+        [JsonProperty("is_tts", NullValueHandling = NullValueHandling.Ignore)]
+        public bool? IsTTS { get; internal set; } = null;
 
-        [JsonProperty("has_embed")]
-        public bool HasEmbed { get; internal set; } = false;
+        [JsonProperty("has_embed", NullValueHandling = NullValueHandling.Ignore)]
+        public bool? HasEmbed { get; internal set; } = null;
 
         [JsonProperty("embed", NullValueHandling = NullValueHandling.Ignore)]
         public DiscordEmbed Embed { get; internal set; } = null;
 
         [JsonProperty("file", NullValueHandling = NullValueHandling.Ignore)]
         public byte[] FileData { get; internal set; } = null;
+
+        [JsonProperty("payload_json", NullValueHandling = NullValueHandling.Ignore)]
+        public string JsonPayload { get; internal set; } = null;
     }
 
     internal class ReadyPayload
