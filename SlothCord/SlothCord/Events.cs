@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using SlothCord.Objects;
 using System;
 using System.Collections.Generic;
@@ -23,8 +24,10 @@ namespace SlothCord
 
     public class OnWebSocketClosedArgs : EventArgs
     {
+        [JsonProperty("reason")]
         public string Message;
-        public int Code;
+        [JsonProperty("code")]
+        public CloseCode Code;
     }
 
     public class CommandErroredArgs : EventArgs

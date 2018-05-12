@@ -4,12 +4,14 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Text;
-using System.IO;
 
 namespace SlothCord.Objects
 {
     public sealed class DiscordUser : UserMethods
     {
+        public async Task<DiscordChannel> CreateDmAsync()
+            => await base.CreateUserDmChannelAsync(this.Id).ConfigureAwait(false);
+
         public async Task<DiscordMessage> SendMessageAsync(string content = null, DiscordEmbed embed = null)
         {
             var channel = await base.CreateUserDmChannelAsync(this.Id).ConfigureAwait(false);
@@ -20,7 +22,7 @@ namespace SlothCord.Objects
         public StatusType Status { get; internal set; }
 
         [JsonProperty("game")]
-        public DiscordActivity? Activity { get; internal set; }
+        public DiscordActivity Activity { get; internal set; }
 
         [JsonProperty("verified")]
         public bool Verified { get; private set; }
@@ -44,7 +46,7 @@ namespace SlothCord.Objects
         public string Email { get; private set; }
 
         [JsonIgnore]
-        public string AvatarUrl { get { return $"https://cdn.discordapp.com/avatars/{this.Id}/{this.Avatar}.png"; } }
+        public string AvatarUrl { get => $"https://cdn.discordapp.com/avatars/{this.Id}/{this.Avatar}.png"; }
 
         [JsonProperty("avatar")]
         private string Avatar { get; set; }
@@ -53,7 +55,7 @@ namespace SlothCord.Objects
         public DateTimeOffset CreatedAt { get; internal set; }
 
         [JsonIgnore]
-        public string Mention { get { return $"<@{this.Id}>"; } }
+        public string Mention { get => $"<@{this.Id}>"; }
     }
 
     public sealed class DiscordPresence
@@ -152,7 +154,7 @@ namespace SlothCord.Objects
         public MessageType Type { get; private set; }
 
         [JsonProperty("activity")]
-        public DiscordActivity? Activity { get; private set; }
+        public DiscordActivity Activity { get; private set; }
 
         [JsonProperty("application")]
         public DiscordApplication Application { get; private set; }
@@ -160,7 +162,7 @@ namespace SlothCord.Objects
 
     public sealed class DiscordApplication { }
 
-    public struct DiscordActivity
+    public sealed class DiscordActivity
     {
         [JsonProperty("url")]
         public string Url { get; private set; }
@@ -202,64 +204,19 @@ namespace SlothCord.Objects
         public int? Flags { get; private set; }
     }
 
-    public struct ActivitySecrets
-    {
-        [JsonProperty("join")]
-        public string Join { get; private set; }
-
-        [JsonProperty("spectate")]
-        public string Spectate { get; private set; }
-
-        [JsonProperty("match")]
-        public string Match { get; private set; }
-    }
-
-    public struct ActivityAssets
-    {
-        [JsonProperty("large_image")]
-        public string LargeImage { get; private set; }
-
-        [JsonProperty("large_text")]
-        public string LargeText { get; private set; }
-
-        [JsonProperty("small_image")]
-        public string SmallImage { get; private set; }
-
-        [JsonProperty("small_text")]
-        public string SmallText { get; private set; }
-    }
-
-    public struct ActivityParty
-    {
-        [JsonProperty("id")]
-        public string Id { get; private set; }
-
-        [JsonProperty("size")]
-        public IReadOnlyList<int> Size { get; private set; }
-    }
-
-    public struct ActivityTimestamps
-    {
-        [JsonProperty("start")]
-        public ulong? Start { get; private set; }
-
-        [JsonProperty("end")]
-        public ulong? End { get; private set; }
-    }
-
     public sealed class DiscordReaction { }
 
     public sealed class DiscordAttachment { }
 
     public sealed class DiscordEmbed
     {
-        public DiscordEmbed AddField(EmbedField f)
+        public DiscordEmbed AddField(EmbedField field)
         {
-            this.PrivateEmbedFields.Add(f);
+            this.PrivateEmbedFields.Add(field);
             return this;
         }
 
-        public DiscordEmbed AddField(string name, string value, bool inline)
+        public DiscordEmbed AddField(string name, string value, bool inline = false)
         {
             this.PrivateEmbedFields.Add(new EmbedField()
             {
@@ -270,6 +227,24 @@ namespace SlothCord.Objects
             return this;
         }
 
+        public DiscordEmbed AddAuthor(EmbedAuthor author)
+        {
+            this.Author = author;
+            return this;
+        }
+
+        public DiscordEmbed AddAutor(string name, string url = null, string iconurl = null, string proxyiconurl = null)
+        {
+            this.Author = new EmbedAuthor()
+            {
+                Name = name,
+                Url = url,
+                IconUrl = iconurl,
+                ProxyIconUrl = proxyiconurl
+            };
+            return this;
+        }
+        
         [JsonProperty("title")]
         public string Title { get; set; }
 
@@ -330,7 +305,7 @@ namespace SlothCord.Objects
         public EmbedAuthor Author { get; set; }
 
         [JsonProperty("fields", NullValueHandling = NullValueHandling.Ignore)]
-        public IReadOnlyList<EmbedField> Fields { get { return this.PrivateEmbedFields; } private set { this.Fields = PrivateEmbedFields; } }
+        public IReadOnlyList<EmbedField> Fields { get => this.PrivateEmbedFields; private set { this.Fields = PrivateEmbedFields; } }
 
         [JsonIgnore]
         private List<EmbedField> PrivateEmbedFields = new List<EmbedField>();
@@ -434,10 +409,10 @@ namespace SlothCord.Objects
         public async Task KickMemberAsync(ulong id)
             => await base.DeleteMemberAsync(this.Id, id).ConfigureAwait(false);
 
-        public async Task RemoveBanAsync(DiscordUser user) 
+        public async Task RemoveBanAsync(DiscordUser user)
             => await base.DeleteGuildBanAsync(this.Id, user.Id).ConfigureAwait(false);
 
-        public async Task RemoveBanAsync(ulong id) 
+        public async Task RemoveBanAsync(ulong id)
             => await base.DeleteGuildBanAsync(this.Id, id).ConfigureAwait(false);
 
         public DiscordGuildMember GetMember(ulong id)
@@ -452,7 +427,7 @@ namespace SlothCord.Objects
         public async Task<AuditLogData> GetAuditLogsAsync(ulong? user_id = null, AuditActionType? action_type = null, ulong? before = null, int? limit = null)
             => await base.ListAuditLogsAsync(this.Id, user_id, action_type, before, limit).ConfigureAwait(false);
 
-        public async Task LeaveAsync() 
+        public async Task LeaveAsync()
             => await base.LeaveGuildAsync(this.Id).ConfigureAwait(false);
 
         public async Task<DiscordChannel> GetChannelAsync(ulong channel_id)
@@ -460,17 +435,17 @@ namespace SlothCord.Objects
 
         public async Task<DiscordGuildMember> GetMemberAsync(ulong user_id)
             => await base.ListGuildMemberAsync(this.Id, user_id).ConfigureAwait(false);
-        
+
         public async Task<IReadOnlyList<DiscordGuildMember>> GetMembersAsync(int limit = 100, ulong? around = null)
             => await base.ListGuildMembersAsync(this.Id, limit, around).ConfigureAwait(false);
 
-        public async Task BanMemberAsync(DiscordGuildMember member, int clear_days = 0, string reason = null) 
+        public async Task BanMemberAsync(DiscordGuildMember member, int clear_days = 0, string reason = null)
             => await base.CreateBanAsync(this.Id, member.UserData.Id, clear_days, reason).ConfigureAwait(false);
 
-        public async Task BanMemberAsync(ulong id, int clear_days = 0, string reason = null) 
+        public async Task BanMemberAsync(ulong id, int clear_days = 0, string reason = null)
             => await base.CreateBanAsync(this.Id, id, clear_days, reason).ConfigureAwait(false);
 
-        public async Task BanB1nzyAsync() 
+        public async Task BanB1nzyAsync()
             => await base.CreateBanAsync(this.Id, 80351110224678912, 0, "B1nzy got ratelimited").ConfigureAwait(false);
 
         [JsonProperty("name")]
@@ -558,12 +533,12 @@ namespace SlothCord.Objects
         public DateTimeOffset CreatedAt { get; internal set; }
     }
 
-    public sealed class DiscordGuildMember: MemberMethods
+    public sealed class DiscordGuildMember : MemberMethods
     {
         public async Task BanAsync(int clear_days = 7, string reason = null)
             => await this.Guild.BanMemberAsync(this.UserData.Id, clear_days, reason).ConfigureAwait(false);
 
-        public async Task KickAsync() 
+        public async Task KickAsync()
             => await this.Guild.KickMemberAsync(this.UserData.Id).ConfigureAwait(false);
 
         public async Task ModifyAsync(string nickname, IReadOnlyList<DiscordRole> roles, bool? is_muted, bool? is_deaf, ulong? channel_id)
@@ -627,10 +602,10 @@ namespace SlothCord.Objects
             return await channel.SendMessageAsync(content, false, embed).ConfigureAwait(false);
         }
 
-        public bool HasRole(DiscordRole role) 
+        public bool HasRole(DiscordRole role)
             => (this.Roles == null) ? false : this.Roles.Any(x => x.Id == role.Id);
 
-        public bool HasRole(ulong id) 
+        public bool HasRole(ulong id)
             => (this.Roles == null) ? false : this.Roles.Any(x => x.Id == id);
 
         [JsonProperty("user")]
@@ -676,6 +651,18 @@ namespace SlothCord.Objects
         public string Mention { get { return $"<@{this.UserData.Id}>"; } }
     }
 
+    public sealed class AuditLogData
+    {
+        [JsonProperty("webhooks")]
+        public IReadOnlyList<Webhook> Webhooks { get; private set; }
+
+        [JsonProperty("users")]
+        public IReadOnlyList<DiscordUser> Users { get; private set; }
+
+        [JsonProperty("audit_log_entries")]
+        public IReadOnlyList<AuditEntryObject> Entries { get; private set; }
+    }
+
     public sealed class DiscordEmoji { }
 
     public sealed class DiscordRole
@@ -697,7 +684,7 @@ namespace SlothCord.Objects
         [JsonProperty("color")]
         private int IntColorValue { get; set; }
         [JsonIgnore]
-        public string Mention { get { return $"<&{this.Id}>"; } }
+        public string Mention { get => $"<@&{this.Id}>"; }
     }
 
     public sealed class DiscordChannel : ChannelMethods
@@ -778,26 +765,7 @@ namespace SlothCord.Objects
         public ulong OwnerId { get; private set; }
 
         [JsonIgnore]
-        public string Mention { get { return $"<#{this.Id}>"; } }
-    }
-
-    public struct Category
-    {
-        [JsonProperty("permission_overwrites", NullValueHandling = NullValueHandling.Ignore)]
-        public IReadOnlyList<ChannelOverwrite> Overwrite { get; private set; }
-
-        [JsonProperty("name")]
-        public string Name { get; private set; }
-
-        [JsonProperty("parent_id", NullValueHandling = NullValueHandling.Ignore)]
-        public ulong ParentId { get; private set; }
-
-        [JsonProperty("position")]
-        public int Position { get; private set; }
-
-        [JsonProperty("guild_id")]
-        public ulong GuildId { get; private set; }
-        
+        public string Mention { get => $"<@#{this.Id}>"; }
     }
 
     public sealed class ChannelOverwrite { }
@@ -834,16 +802,23 @@ namespace SlothCord.Objects
 
     public struct Webhook { }
 
-    public sealed class AuditLogData
+    public struct Category
     {
-        [JsonProperty("webhooks")]
-        public IReadOnlyList<Webhook> Webhooks { get; private set; }
+        [JsonProperty("permission_overwrites", NullValueHandling = NullValueHandling.Ignore)]
+        public IReadOnlyList<ChannelOverwrite> Overwrite { get; private set; }
 
-        [JsonProperty("users")]
-        public IReadOnlyList<DiscordUser> Users { get; private set; }
+        [JsonProperty("name")]
+        public string Name { get; private set; }
 
-        [JsonProperty("audit_log_entries")]
-        public IReadOnlyList<AuditEntryObject> Entries { get; private set; }
+        [JsonProperty("parent_id", NullValueHandling = NullValueHandling.Ignore)]
+        public ulong ParentId { get; private set; }
+
+        [JsonProperty("position")]
+        public int Position { get; private set; }
+
+        [JsonProperty("guild_id")]
+        public ulong GuildId { get; private set; }
+
     }
 
     public struct AuditEntryObject
@@ -919,6 +894,52 @@ namespace SlothCord.Objects
         public string TypeKey { get; private set; }
     }
 
+
+    public struct ActivitySecrets
+    {
+        [JsonProperty("join")]
+        public string Join { get; private set; }
+
+        [JsonProperty("spectate")]
+        public string Spectate { get; private set; }
+
+        [JsonProperty("match")]
+        public string Match { get; private set; }
+    }
+
+    public struct ActivityAssets
+    {
+        [JsonProperty("large_image")]
+        public string LargeImage { get; private set; }
+
+        [JsonProperty("large_text")]
+        public string LargeText { get; private set; }
+
+        [JsonProperty("small_image")]
+        public string SmallImage { get; private set; }
+
+        [JsonProperty("small_text")]
+        public string SmallText { get; private set; }
+    }
+
+    public struct ActivityParty
+    {
+        [JsonProperty("id")]
+        public string Id { get; private set; }
+
+        [JsonProperty("size")]
+        public IReadOnlyList<int> Size { get; private set; }
+    }
+
+    public struct ActivityTimestamps
+    {
+        [JsonProperty("start")]
+        public ulong? Start { get; private set; }
+
+        [JsonProperty("end")]
+        public ulong? End { get; private set; }
+    }
+
     //Tbh I have no goddamn clue
     public struct ChangeKey
     {
@@ -930,7 +951,7 @@ namespace SlothCord.Objects
 
         [JsonProperty("splash_hash")]
         public string SplashHash { get; private set; }
-        
+
         [JsonProperty("owner_id")]
         public ulong? OwnerId { get; private set; }
 
@@ -963,7 +984,7 @@ namespace SlothCord.Objects
 
         [JsonProperty("$remove")]
         public IReadOnlyList<DiscordRole> RolesRemoved { get; private set; }
-        
+
         [JsonProperty("prune_delete_days")]
         public int? PruneDeleteDays { get; private set; }
 
@@ -984,7 +1005,7 @@ namespace SlothCord.Objects
 
         [JsonProperty("permission_overwrites")]
         public IReadOnlyList<ChannelOverwrite> ChannelOverwrites { get; private set; }
-        
+
         [JsonProperty("nsfw")]
         public bool? Nsfw { get; private set; }
 
@@ -1008,7 +1029,7 @@ namespace SlothCord.Objects
 
         [JsonProperty("deny")]
         public int? RoleDeny { get; private set; }
-        
+
         [JsonProperty("code")]
         public string InviteCode { get; private set; }
 

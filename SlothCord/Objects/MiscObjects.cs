@@ -125,6 +125,24 @@
         Watching = 3
     }
 
+    public enum CloseCode
+    {
+        GracefulClose = 1000,
+        CloudflareLoadBalance = 1001,
+        RandomServerError = 1006,
+        UnknownError = 4000,
+        InvalidPayloadSent = 4001,
+        InvalidMessage = 4002,
+        NoCurrentSessionSent = 4003,
+        InvalidToken = 4004,
+        AlreadyActiveSession = 4005,
+        InvalidSequenceNumber = 4007,
+        TooManyWSMessages = 4008,
+        SessionTimedOut = 4009,
+        InvalidShardData = 4010,
+        TooManyGuilds = 4011
+    }
+
     public enum MessageType
     {
         Default = 0, 
@@ -163,7 +181,7 @@
         Resume = 6,
         Reconnect = 7,
         RequestGuildMembers = 8,
-        InvalidSession = 9,
+        InvalidateSession = 9,
         Hello = 10,
         HeartbeatAck = 11,
         Unknown = 12

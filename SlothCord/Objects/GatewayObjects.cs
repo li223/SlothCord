@@ -13,60 +13,6 @@ namespace SlothCord.Objects
         public int RecommendedShards { get; internal set; }
     }
 
-    internal class MessageCreatePayload
-    {
-        [JsonProperty("has_content", NullValueHandling = NullValueHandling.Ignore)]
-        public bool? HasContent { get; internal set; } = null;
-
-        [JsonProperty("content", NullValueHandling = NullValueHandling.Ignore)]
-        public string Content { get; internal set; } = null;
-
-        [JsonProperty("is_tts", NullValueHandling = NullValueHandling.Ignore)]
-        public bool? IsTTS { get; internal set; } = null;
-
-        [JsonProperty("has_embed", NullValueHandling = NullValueHandling.Ignore)]
-        public bool? HasEmbed { get; internal set; } = null;
-
-        [JsonProperty("embed", NullValueHandling = NullValueHandling.Ignore)]
-        public DiscordEmbed Embed { get; internal set; } = null;
-
-        [JsonProperty("file", NullValueHandling = NullValueHandling.Ignore)]
-        public byte[] FileData { get; internal set; } = null;
-
-        [JsonProperty("payload_json", NullValueHandling = NullValueHandling.Ignore)]
-        public string JsonPayload { get; internal set; } = null;
-    }
-
-    internal class ReadyPayload
-    {
-        [JsonProperty("v")]
-        public int Version { get; private set; }
-
-        [JsonProperty("user_settings", NullValueHandling = NullValueHandling.Ignore)]
-        public UserSettings UserSettings { get; private set; }
-
-        [JsonProperty("user")]
-        public DiscordUser User { get; private set; }
-
-        [JsonProperty("shard")]
-        public int[] Shard { get; private set; }
-
-        [JsonProperty("session_id")]
-        public string SessionId { get; private set; }
-
-        [JsonProperty("relationships", NullValueHandling = NullValueHandling.Ignore)]
-        public string[] Relationships { get; private set; }
-
-        [JsonProperty("private_channnels", NullValueHandling = NullValueHandling.Ignore)]
-        public IReadOnlyList<DiscordChannel> PrivateChannels { get; private set; }
-
-        [JsonProperty("guilds")]
-        public IReadOnlyList<DiscordGuild> Guilds { get; private set; }
-
-        [JsonProperty("_trace")]
-        public string[] Trace { get; private set; }
-    }
-
     internal struct GatewayPayload
     {
         [JsonProperty("t", NullValueHandling = NullValueHandling.Ignore)]
@@ -122,21 +68,6 @@ namespace SlothCord.Objects
 
         [JsonProperty("game", NullValueHandling = NullValueHandling.Ignore)]
         public DiscordActivity Activity { get; private set; }
-    }
-
-    internal class UserPresencePayload
-    {
-        [JsonProperty("since", NullValueHandling = NullValueHandling.Include)]
-        public ulong? Since { get; internal set; }
-
-        [JsonProperty("game", NullValueHandling = NullValueHandling.Include)]
-        public DiscordGame Game { get; internal set; }
-
-        [JsonProperty("status")]
-        public string Status { get; internal set; }
-
-        [JsonProperty("afk")]
-        public bool Afk { get; internal set; } = false;
     }
 
     internal struct VoiceStateUpdatePaylod
@@ -245,6 +176,8 @@ namespace SlothCord.Objects
         public ulong? ChannelId { get; set; }
     }
 
+    internal struct UserSettings { }
+
     internal class Properties
     {
         [JsonProperty("$os")]
@@ -257,5 +190,72 @@ namespace SlothCord.Objects
         public string Device { get; private set; } = "SlothCord";
     }
 
-    internal struct UserSettings { }
+    internal class UserPresencePayload
+    {
+        [JsonProperty("since", NullValueHandling = NullValueHandling.Include)]
+        public ulong? Since { get; internal set; }
+
+        [JsonProperty("game", NullValueHandling = NullValueHandling.Include)]
+        public DiscordGame Game { get; internal set; }
+
+        [JsonProperty("status")]
+        public string Status { get; internal set; }
+
+        [JsonProperty("afk")]
+        public bool Afk { get; internal set; } = false;
+    }
+
+    internal class MessageCreatePayload
+    {
+        [JsonProperty("has_content", NullValueHandling = NullValueHandling.Ignore)]
+        public bool? HasContent { get; internal set; } = null;
+
+        [JsonProperty("content", NullValueHandling = NullValueHandling.Ignore)]
+        public string Content { get; internal set; } = null;
+
+        [JsonProperty("is_tts", NullValueHandling = NullValueHandling.Ignore)]
+        public bool? IsTTS { get; internal set; } = null;
+
+        [JsonProperty("has_embed", NullValueHandling = NullValueHandling.Ignore)]
+        public bool? HasEmbed { get; internal set; } = null;
+
+        [JsonProperty("embed", NullValueHandling = NullValueHandling.Ignore)]
+        public DiscordEmbed Embed { get; internal set; } = null;
+
+        [JsonProperty("file", NullValueHandling = NullValueHandling.Ignore)]
+        public byte[] FileData { get; internal set; } = null;
+
+        [JsonProperty("payload_json", NullValueHandling = NullValueHandling.Ignore)]
+        public string JsonPayload { get; internal set; } = null;
+    }
+
+    internal class ReadyPayload
+    {
+        [JsonProperty("v")]
+        public int Version { get; private set; }
+
+        [JsonProperty("user_settings", NullValueHandling = NullValueHandling.Ignore)]
+        public UserSettings UserSettings { get; private set; }
+
+        [JsonProperty("user")]
+        public DiscordUser User { get; private set; }
+
+        [JsonProperty("shard")]
+        public int[] Shard { get; private set; }
+
+        [JsonProperty("session_id")]
+        public string SessionId { get; private set; }
+
+        [JsonProperty("relationships", NullValueHandling = NullValueHandling.Ignore)]
+        public string[] Relationships { get; private set; }
+
+        [JsonProperty("private_channnels", NullValueHandling = NullValueHandling.Ignore)]
+        public IReadOnlyList<DiscordChannel> PrivateChannels { get; private set; }
+
+        [JsonProperty("guilds")]
+        public IReadOnlyList<DiscordGuild> Guilds { get; private set; }
+
+        [JsonProperty("_trace")]
+        public string[] Trace { get; private set; }
+    }
 }

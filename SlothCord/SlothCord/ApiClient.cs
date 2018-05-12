@@ -29,6 +29,11 @@ namespace SlothCord.Objects
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             return content;
         }
+
+        protected internal async Task HandleLimitAsync(HttpRequestMessage msg, KeyValuePair<int, int> requests, int limit)
+        {
+
+        }
     }
 
     public class MessageMethods : ApiBase

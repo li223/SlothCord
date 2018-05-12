@@ -15,6 +15,7 @@ namespace SlothCord
 {
     public class DiscordClient : ApiBase
     {
+        #region Random Stuff
         public event OnHttpError HttpError;
         public event OnMessageUpdate MessageUpdate;
         public event OnChannelEvent PinUpdate;
@@ -40,6 +41,7 @@ namespace SlothCord
         private int _guildsToDownload = 0;
         private int _downloadedGuilds = 0;
         private string _sessionId = "";
+        private bool _heartbeat = false;
         private int _heartbeatInterval = 0;
 
         internal List<DiscordGuild> AvailableGuilds = new List<DiscordGuild>();
@@ -108,7 +110,8 @@ namespace SlothCord
         /// The current client as a user
         /// </summary>
         public DiscordUser CurrentUser { get; internal set; }
-
+        #endregion
+        #region Methods
         /// <summary>
         /// Connect to the websocket
         /// </summary>
@@ -130,8 +133,8 @@ namespace SlothCord
             this.Token = this.Token;
             _httpClient.DefaultRequestHeaders.Add("User-Agent", "DiscordBot ($https://github.com/li223/SlothCord, $2.2.5)");
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri($"{_baseAddress}/gateway/bot"));
-            var response = await _httpClient.SendAsync(request);
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.IsSuccessStatusCode)
             {
                 if (LogActions)
@@ -145,7 +148,7 @@ namespace SlothCord
                 WebSocketClient.MessageReceived += WebSocketClient_MessageReceived;
                 WebSocketClient.Closed += WebSocketClient_Closed;
 #if NETCORE
-                await WebSocketClient.OpenAsync();
+                await WebSocketClient.OpenAsync().ConfigureAwait(false);
 #elif NETFX47
                 WebSocketClient.Open();
 #endif
@@ -194,22 +197,23 @@ namespace SlothCord
 
         private Task SendResumeAsync()
         {
+            _heartbeat = false;
             if (LogActions)
             {
                 Console.ForegroundColor = ConsoleColor.Cyan;
                 Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Gateway SEND RESUME");
                 Console.ForegroundColor = ConsoleColor.White;
             }
-            var Content = JObject.Parse(JsonConvert.SerializeObject(new ResumePayload()
+            var Content = JsonConvert.SerializeObject(new ResumePayload()
             {
                 Token = $"{this.TokenType} {this.Token}",
-                Sequence = _sequence,
                 SessionId = _sessionId
-            }));
+            });
             var pldata = new GatewayPayload()
             {
                 Code = (int)OPCode.Resume,
-                EventPayload = Content
+                EventPayload = Content,
+                Sequence = _sequence
             };
             var payload = JsonConvert.SerializeObject(pldata);
             WebSocketClient.Send(payload);
@@ -218,7 +222,7 @@ namespace SlothCord
 
         private async void SendHeartbeats()
         {
-            while (true)
+            while (_heartbeat)
             {
                 if (WebSocketClient.State == WebSocketState.Open)
                 {
@@ -229,7 +233,7 @@ namespace SlothCord
                         Console.ForegroundColor = ConsoleColor.White;
                     }
                     WebSocketClient.Send(@"{""op"":1, ""t"":null,""d"":null,""s"":null}");
-                    await Task.Delay(_heartbeatInterval);
+                    await Task.Delay(_heartbeatInterval).ConfigureAwait(false);
                 }
                 else break;
             }
@@ -245,21 +249,38 @@ namespace SlothCord
                 Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Attempting Reconnect");
                 Console.ForegroundColor = ConsoleColor.White;
             }
-            var data = e as OnWebSocketClosedArgs;
-            SocketClosed?.Invoke(this, data);
+            var data = JsonConvert.DeserializeObject<OnWebSocketClosedArgs>(JsonConvert.SerializeObject(e));
+            _heartbeat = false;
+            if (data.Code == CloseCode.GracefulClose)
+            {
+                _sessionId = "";
+                _sequence = 0;
+                SocketClosed?.Invoke(this, data);
 #if NETCORE
-            await WebSocketClient.OpenAsync();
+                if (WebSocketClient.State == WebSocketState.Open || WebSocketClient.State == WebSocketState.Connecting)
+                    await WebSocketClient.CloseAsync().ConfigureAwait(false);
+                await WebSocketClient.OpenAsync().ConfigureAwait(false);
 #elif NETFX47
-            WebSocketClient.Open();
+                if (WebSocketClient.State == WebSocketState.Open || WebSocketClient.State == WebSocketState.Connecting)
+                    WebSocketClient.Close();
+                WebSocketClient.Open();
 #endif
+            }
+            else
+            {
+#if NETCORE
+                await WebSocketClient.OpenAsync();
+#else
+                WebSocketClient.Open();
+#endif
+            }
         }
-
         private void WebSocketClient_Error(object sender, SuperSocket.ClientEngine.ErrorEventArgs e)
         {
             if (LogActions)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  WEbsocket ERROR");
+                Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Websocket ERROR");
                 Console.ForegroundColor = ConsoleColor.White;
             }
             SocketErrored?.Invoke(this, e.Exception.Message);
@@ -290,13 +311,15 @@ namespace SlothCord
                         if (_sessionId == "")
                         {
                             _heartbeatInterval = pl.HeartbeatInterval;
+                            _heartbeat = true;
                             var hbt = new Task(SendHeartbeats, TaskCreationOptions.LongRunning);
                             hbt.Start();
-                            await SendIdentifyAsync();
+                            await SendIdentifyAsync().ConfigureAwait(false);
                         }
                         else
                         {
-                            await SendResumeAsync();
+                            _heartbeat = false;
+                            await SendResumeAsync().ConfigureAwait(false);
                         }
                         break;
                     }
@@ -641,6 +664,13 @@ namespace SlothCord
                         }
                         else
                         {
+                            if (data.EventName == "RESUMED")
+                            {
+                                _heartbeat = true;
+                                var hbt = new Task(SendHeartbeats, TaskCreationOptions.LongRunning);
+                                hbt.Start();
+                                break;
+                            }
                             if (LogActions)
                             {
                                 Console.ForegroundColor = ConsoleColor.DarkGreen;
@@ -675,18 +705,20 @@ namespace SlothCord
                             Console.ForegroundColor = ConsoleColor.White;
                         }
 #if NETCORE
-                        await WebSocketClient.CloseAsync();
-                        await WebSocketClient.OpenAsync();
+                        await WebSocketClient.CloseAsync().ConfigureAwait(false);
+                        await WebSocketClient.OpenAsync().ConfigureAwait(false);
 #elif NETFX47
                         WebSocketClient.Close();
                         WebSocketClient.Open();
 #endif
+                        _heartbeat = true;
                         var tsk = new Task(SendHeartbeats);
                         tsk.Start();
                         break;
                     }
-                case (int)OPCode.InvalidSession:
+                case (int)OPCode.InvalidateSession:
                     {
+                        _heartbeat = false;
                         if (LogActions)
                         {
                             Console.ForegroundColor = ConsoleColor.Cyan;
@@ -694,7 +726,7 @@ namespace SlothCord
                         }
                         if ((bool)data.EventPayload)
                         {
-                            await Task.Delay(1000);
+                            await Task.Delay(1000).ConfigureAwait(false);
                             var content = JsonConvert.SerializeObject(new ResumePayload()
                             {
                                 Sequence = this._sequence,
@@ -712,7 +744,7 @@ namespace SlothCord
                         {
                             _sessionId = "";
                             _downloadedGuilds = 0;
-                            await SendIdentifyAsync();
+                            await SendIdentifyAsync().ConfigureAwait(false);
                         }
                         break;
                     }
@@ -736,8 +768,8 @@ namespace SlothCord
 
         public async Task<DiscordGuild> GetGuildAsync(ulong guild_id)
         {
-            var response = await _httpClient.GetAsync(new Uri($"{_baseAddress}/guilds/{guild_id}"));
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.GetAsync(new Uri($"{_baseAddress}/guilds/{guild_id}")).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.IsSuccessStatusCode)
                 return JsonConvert.DeserializeObject<DiscordGuild>(content);
             else return null;
@@ -745,8 +777,8 @@ namespace SlothCord
 
         public async Task<DiscordChannel> DeleteChannelAsync(ulong channel_id)
         {
-            var response = await _httpClient.DeleteAsync(new Uri($"{_baseAddress}/channels/{channel_id}"));
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.DeleteAsync(new Uri($"{_baseAddress}/channels/{channel_id}")).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordChannel>(content);
             else
             {
@@ -757,8 +789,8 @@ namespace SlothCord
 
         public async Task<IReadOnlyList<DiscordGuild>> GetUserGuildsAsync()
         {
-            var response = await _httpClient.GetAsync(new Uri($"{_baseAddress}/users/@me/guilds"));
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.GetAsync(new Uri($"{_baseAddress}/users/@me/guilds")).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<IReadOnlyList<DiscordGuild>>(content);
             else
             {
@@ -769,8 +801,8 @@ namespace SlothCord
 
         public async Task<DiscordChannel> GetChannelAsync(ulong channel_id)
         {
-            var response = await _httpClient.GetAsync(new Uri($"{_baseAddress}/channels/{channel_id}"));
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.GetAsync(new Uri($"{_baseAddress}/channels/{channel_id}")).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordChannel>(content);
             else
             {
@@ -781,8 +813,8 @@ namespace SlothCord
 
         public async Task<DiscordUser> GetUserAsync(ulong user_id)
         {
-            var response = await _httpClient.GetAsync(new Uri($"{_baseAddress}/users/{user_id}"));
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.GetAsync(new Uri($"{_baseAddress}/users/{user_id}")).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordUser>(content);
             else return null;
         }
@@ -800,8 +832,8 @@ namespace SlothCord
                 Roles = roles as IReadOnlyList<DiscordRole>,
                 Channels = channels as IReadOnlyList<DiscordChannel>
             };
-            var response = await _httpClient.PostAsync(new Uri($"{_baseAddress}/guilds"), new StringContent(JsonConvert.SerializeObject(guild)));
-            var content = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.PostAsync(new Uri($"{_baseAddress}/guilds"), new StringContent(JsonConvert.SerializeObject(guild))).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordGuild>(content);
             else return null;
         }
@@ -832,5 +864,6 @@ namespace SlothCord
             WebSocketClient.Send(payload);
             return Task.CompletedTask;
         }
+#endregion
     }
 }
