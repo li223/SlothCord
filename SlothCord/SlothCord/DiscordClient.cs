@@ -318,7 +318,10 @@ namespace SlothCord
                         }
                         else
                         {
-                            _heartbeat = false;
+                            _heartbeatInterval = pl.HeartbeatInterval;
+                            _heartbeat = true;
+                            var hbt = new Task(SendHeartbeats, TaskCreationOptions.LongRunning);
+                            hbt.Start();
                             await SendResumeAsync().ConfigureAwait(false);
                         }
                         break;
