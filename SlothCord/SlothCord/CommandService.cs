@@ -293,7 +293,7 @@ namespace SlothCord.Commands
             }
             try
             {
-                var result = cmd.Method.Invoke(cmd.ClassInstance, passargs.ToArray());
+                await (cmd.Method.Invoke(cmd.ClassInstance, passargs.ToArray()) as Task).ConfigureAwait(false);
             }
             catch (TargetParameterCountException)
             {

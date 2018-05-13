@@ -52,7 +52,7 @@ namespace SlothCord.Objects
         private string Avatar { get; set; }
 
         [JsonIgnore]
-        public DateTimeOffset CreatedAt { get; internal set; }
+        public DateTimeOffset CreatedAt { get; private set; }
 
         [JsonIgnore]
         public string Mention { get => $"<@{this.Id}>"; }
@@ -233,15 +233,33 @@ namespace SlothCord.Objects
             return this;
         }
 
-        public DiscordEmbed AddAutor(string name, string url = null, string iconurl = null, string proxyiconurl = null)
+        public DiscordEmbed AddAuthor(string name, string url = null, string icon_url = null, string proxy_icon_url = null)
         {
             this.Author = new EmbedAuthor()
             {
                 Name = name,
                 Url = url,
-                IconUrl = iconurl,
-                ProxyIconUrl = proxyiconurl
+                IconUrl = icon_url,
+                ProxyIconUrl = proxy_icon_url
             };
+            return this;
+        }
+
+        public DiscordEmbed AddFooter(EmbedFooter footer)
+        {
+            this.Footer = footer;
+            return this;
+        }
+
+        public DiscordEmbed AddFooter(string text, string icon_url = null, string proxy_icon_url = null)
+        {
+            var footer = new EmbedFooter()
+            {
+                Text = text,
+                IconUrl = icon_url,
+                ProxyIconUrl = proxy_icon_url
+            };
+            this.Footer = footer;
             return this;
         }
         
@@ -478,6 +496,9 @@ namespace SlothCord.Objects
         [JsonProperty("OwnerId")]
         public ulong? OwnerId { get; private set; }
 
+        [JsonIgnore]
+        public DiscordGuildMember Owner { get => this.Members.First(x => x.UserData.Id == this.OwnerId); }
+
         [JsonProperty("region")]
         public string Region { get; internal set; }
 
@@ -524,7 +545,7 @@ namespace SlothCord.Objects
         public IReadOnlyList<DiscordPresence> Presences { get; private set; }
 
         [JsonProperty("members")]
-        public IReadOnlyList<DiscordGuildMember> Members { get; private set; }
+        public IReadOnlyList<DiscordGuildMember> Members { get; internal set; }
 
         [JsonProperty("unavailable")]
         public bool IsUnavailable { get; private set; }
@@ -648,7 +669,7 @@ namespace SlothCord.Objects
         public IReadOnlyList<DiscordRole> Roles { get; internal set; }
 
         [JsonIgnore]
-        public string Mention { get { return $"<@{this.UserData.Id}>"; } }
+        public string Mention { get => $"<@{this.UserData.Id}>"; }
     }
 
     public sealed class AuditLogData
@@ -670,7 +691,7 @@ namespace SlothCord.Objects
         [JsonProperty("position")]
         public int Postition { get; private set; }
         [JsonProperty("permissions")]
-        public long Permissions { get; private set; }
+        public Permissions Permissions { get; private set; }
         [JsonProperty("name")]
         public string Name { get; private set; }
         [JsonProperty("Mentionable")]
@@ -1013,7 +1034,7 @@ namespace SlothCord.Objects
         public ulong? AppicationId { get; private set; }
 
         [JsonProperty("permissions")]
-        public int? Permissions { get; private set; }
+        public Permissions? Permissions { get; private set; }
 
         [JsonProperty("color")]
         public DiscordColor? Color { get; private set; }

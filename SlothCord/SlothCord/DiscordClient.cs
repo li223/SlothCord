@@ -4,9 +4,11 @@ using SlothCord.Commands;
 using SlothCord.Objects;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using WebSocket4Net;
@@ -110,7 +112,10 @@ namespace SlothCord
         /// The current client as a user
         /// </summary>
         public DiscordUser CurrentUser { get; internal set; }
+
+        public string VersionString { get => FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(this.GetType()).Location).FileVersion; }
         #endregion
+
         #region Methods
         /// <summary>
         /// Connect to the websocket
@@ -268,13 +273,17 @@ namespace SlothCord
             }
             else
             {
+                _heartbeat = false;
+/*
 #if NETCORE
-                await WebSocketClient.OpenAsync();
+                await WebSocketClient.OpenAsync().ConfigureAwait(false);
 #else
                 WebSocketClient.Open();
 #endif
+*/
             }
         }
+
         private void WebSocketClient_Error(object sender, SuperSocket.ClientEngine.ErrorEventArgs e)
         {
             if (LogActions)
@@ -403,14 +412,14 @@ namespace SlothCord
                                     {
                                         var pl = JsonConvert.DeserializeObject<PresencePayload>(data.EventPayload.ToString());
                                         var guild = this.Guilds.FirstOrDefault(x => x.Id == pl.GuildId);
-                                        var member = guild.Members?.FirstOrDefault(x => x.UserData.Id == pl.User.Id);
+                                        var guildmembers = guild.Members.ToList();
+                                        var member = guildmembers?.FirstOrDefault(x => x.UserData.Id == pl.User.Id);
                                         var user = this.CachedUsers?.FirstOrDefault(x => x.Id == pl.User.Id);
                                         var prevmember = member;
                                         var args = new PresenceUpdateArgs() { MemberBefore = prevmember };
                                         if (member != null)
                                         {
                                             member.Guild = guild;
-                                            member.UserData = pl.User;
                                             member.Nickname = pl.Nickname;
                                             member.UserData.Status = pl.Status;
                                             var roles = new List<DiscordRole>();
@@ -419,12 +428,10 @@ namespace SlothCord
                                             member.Roles = roles;
                                             member.UserData.Activity = pl.Activity;
                                         }
-                                        else
-                                        {
-                                            user = pl.User;
-                                            user.Activity = pl.Activity;
-                                        }
+                                        else if(user != null) user.Activity = pl.Activity;
                                         args.MemberAfter = member;
+                                        if(member != null) guildmembers[guildmembers.IndexOf(prevmember)] = member;
+                                        guild.Members = guildmembers;
                                         PresenceUpdated?.Invoke(this, args);
                                         if (this.EnableUserCaching)
                                             if (this.InternalUserCache != null)
