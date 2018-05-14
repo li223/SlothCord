@@ -382,7 +382,6 @@ namespace SlothCord
                                         var guild = JsonConvert.DeserializeObject<DiscordGuild>(data.EventPayload.ToString());
                                         foreach (var member in guild.Members)
                                         {
-
                                             var roles = new List<DiscordRole>();
                                             foreach (var id in member.RoleIds)
                                                 roles.Add(guild.Roles.FirstOrDefault(x => x.Id == id));
@@ -429,7 +428,7 @@ namespace SlothCord
                                             member.Roles = roles;
                                             member.UserData.Activity = pl.Activity;
                                         }
-                                        else if(user != null) user.Activity = pl.Activity;
+                                        else if (user != null) user.Activity = pl.Activity;
                                         args.MemberAfter = member;
                                         if(member != null && prevmember != null) guildmembers[guildmembers.IndexOf(prevmember)] = member;
                                         guild.Members = guildmembers;
@@ -577,7 +576,8 @@ namespace SlothCord
                                         if (this.EnableMessageCaching)
                                             if (this.InternalMessageCache != null)
                                             {
-                                                this.InternalMessageCache[this.InternalMessageCache.IndexOf(prevmsg)] = pl;
+                                                if(prevmsg != null) this.InternalMessageCache[this.InternalMessageCache.IndexOf(prevmsg)] = pl;
+                                                else this.InternalMessageCache.Add(pl);
                                                 this.CachedMessages = this.InternalMessageCache;
                                             }
                                         break;

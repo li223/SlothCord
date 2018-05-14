@@ -140,10 +140,6 @@ namespace SlothCord.Commands
             var guild = client.Guilds.FirstOrDefault(x => x.Channels.Any(a => a.Id == msg.ChannelId));
             var channel = guild.Channels.FirstOrDefault(x => x.Id == msg.ChannelId);
             var member = guild.Members.FirstOrDefault(x => x.UserData.Id == msg.Author.Id);
-            var roles = new List<DiscordRole>();
-            foreach (var id in member.RoleIds)
-                roles.Add(guild.Roles.FirstOrDefault(x => x.Id == id));
-            member.Roles = roles;
             var context = new SlothCommandContext()
             {
                 Message = msg,
@@ -154,6 +150,7 @@ namespace SlothCord.Commands
                 Member = member,
                 Services = this.Services
             };
+            context.Guild = guild;
             List<object> Args = new List<object>();
             Args.AddRange(msg.Content.Replace(this.StringPrefix, "").Split(' ').ToList());
             var group = UserDefinedGroups.FirstOrDefault(x => x.GroupName == (string)Args[0]);

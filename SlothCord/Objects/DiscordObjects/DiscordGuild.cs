@@ -45,10 +45,19 @@ namespace SlothCord.Objects
             => await base.ListGuildChannelAsync(this.Id, channel_id).ConfigureAwait(false);
 
         public async Task<DiscordGuildMember> GetMemberAsync(ulong user_id)
-            => await base.ListGuildMemberAsync(this.Id, user_id).ConfigureAwait(false);
+        {
+            var member = await base.ListGuildMemberAsync(this.Id, user_id).ConfigureAwait(false);
+            member.Guild = this;
+            return member;
+        }
 
         public async Task<IReadOnlyList<DiscordGuildMember>> GetMembersAsync(int limit = 100, ulong? around = null)
-            => await base.ListGuildMembersAsync(this.Id, limit, around).ConfigureAwait(false);
+        {
+            var members = await base.ListGuildMembersAsync(this.Id, limit, around).ConfigureAwait(false);
+            foreach (var member in members)
+                member.Guild = this;
+            return members;
+        }
 
         public async Task BanMemberAsync(DiscordGuildMember member, int clear_days = 0, string reason = null)
             => await base.CreateBanAsync(this.Id, member.UserData.Id, clear_days, reason).ConfigureAwait(false);
