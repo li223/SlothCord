@@ -10,6 +10,41 @@ namespace SlothCord
 {
     public class GuildMethods : ApiBase
     {
+        internal async Task<GuildEmbed> ModifyGuildEmbedAsync(ulong guild_id, bool enabled, ulong channel_id)
+        {
+            var msg = new HttpRequestMessage(HttpMethod.Put, new Uri($"{_baseAddress}/guilds/{guild_id}/embed"))
+            {
+                Content = new StringContent(JsonConvert.SerializeObject(new GuildEmbed()
+                {
+                    IsEnabled = enabled,
+                    ChannelId = channel_id
+                }))
+            };
+            var response = await _httpClient.SendAsync(msg).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<GuildEmbed>(content);
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
+                    return JsonConvert.DeserializeObject<GuildEmbed>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg).ConfigureAwait(false));
+                else return null;
+            }
+        }
+
+        internal async Task<GuildEmbed> GetGuildEmbedAsync(ulong guild_id)
+        {
+            var msg = new HttpRequestMessage(HttpMethod.Get, new Uri($"{_baseAddress}/guilds/{guild_id}/embed"));
+            var response = await _httpClient.SendAsync(msg).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<GuildEmbed>(content);
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
+                    return JsonConvert.DeserializeObject<GuildEmbed>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg).ConfigureAwait(false));
+                else return null;
+            }
+        }
+
         internal async Task DeleteMemberAsync(ulong guild_id, ulong member_id)
         {
             var msg = new HttpRequestMessage(HttpMethod.Delete, new Uri($"{_baseAddress}/guilds/{guild_id}/members/{member_id}"));

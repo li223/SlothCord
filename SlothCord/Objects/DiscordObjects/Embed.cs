@@ -214,4 +214,13 @@ namespace SlothCord.Objects
         [JsonProperty("inline")]
         public bool IsInline { get; set; }
     }
+
+    public sealed class GuildEmbed
+    {
+        [JsonProperty("enabled")]
+        public bool IsEnabled { get; internal set; }
+
+        [JsonProperty("channel_id")]
+        public ulong ChannelId { get; internal set; }
+    }
 }

@@ -8,6 +8,12 @@ namespace SlothCord.Objects
 {
     public sealed class DiscordGuild : GuildMethods
     {
+        public async Task<GuildEmbed> GetEmbedAsync()
+            => await base.GetGuildEmbedAsync(this.Id);
+
+        public async Task<GuildEmbed> ModifyEmbedAsync(bool enabled = true, ulong channel_id = 0)
+            => await base.ModifyGuildEmbedAsync(this.Id, enabled, channel_id);
+
         public async Task KickMemberAsync(DiscordGuildMember member)
             => await base.DeleteMemberAsync(this.Id, member.UserData.Id).ConfigureAwait(false);
 

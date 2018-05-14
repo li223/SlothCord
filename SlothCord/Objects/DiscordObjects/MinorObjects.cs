@@ -96,7 +96,7 @@ namespace SlothCord.Objects
         public IReadOnlyList<AuditEntryObject> Entries { get; private set; }
     }
 
-    public class DiscordEmoji
+    public sealed class DiscordEmoji
     {
         [JsonProperty("id")]
         public ulong Id { get; private set; }
@@ -124,20 +124,28 @@ namespace SlothCord.Objects
     {
         [JsonProperty("position")]
         public int Postition { get; private set; }
+
         [JsonProperty("permissions")]
         public Permissions Permissions { get; private set; }
+
         [JsonProperty("name")]
         public string Name { get; private set; }
+
         [JsonProperty("Mentionable")]
         public bool Mentionable { get; private set; }
+
         [JsonProperty("managed")]
         public bool Managed { get; private set; }
+
         [JsonProperty("id")]
         public ulong Id { get; private set; }
+
         [JsonProperty("hoist")]
         public bool IsHoisted { get; private set; }
+
         [JsonProperty("color")]
         private int IntColorValue { get; set; }
+
         [JsonIgnore]
         public string Mention { get => $"<@&{this.Id}>"; }
     }
@@ -267,7 +275,6 @@ namespace SlothCord.Objects
         [JsonProperty("key")]
         public string TypeKey { get; private set; }
     }
-
 
     public struct ActivitySecrets
     {
