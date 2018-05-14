@@ -417,6 +417,7 @@ namespace SlothCord
                                         var user = this.CachedUsers?.FirstOrDefault(x => x.Id == pl.User.Id);
                                         var prevmember = member;
                                         var args = new PresenceUpdateArgs() { MemberBefore = prevmember };
+                                        if (pl.Status == StatusType.Online && member == null) member = await guild.GetMemberAsync(pl.User.Id).ConfigureAwait(false);
                                         if (member != null)
                                         {
                                             member.Guild = guild;
@@ -430,7 +431,7 @@ namespace SlothCord
                                         }
                                         else if(user != null) user.Activity = pl.Activity;
                                         args.MemberAfter = member;
-                                        if(member != null) guildmembers[guildmembers.IndexOf(prevmember)] = member;
+                                        if(member != null && prevmember != null) guildmembers[guildmembers.IndexOf(prevmember)] = member;
                                         guild.Members = guildmembers;
                                         PresenceUpdated?.Invoke(this, args);
                                         if (this.EnableUserCaching)
@@ -835,7 +836,6 @@ namespace SlothCord
             {
                 Name = name,
                 Region = region,
-                IconUrl = Convert.ToBase64String(File.ReadAllBytes(icon_file_path)),
                 VerificationLevel = verificationLevel,
                 DefaultMessageNotifications = notificationLevel,
                 ExplicitContentFilter = explicitContentFilter,

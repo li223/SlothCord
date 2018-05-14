@@ -488,7 +488,10 @@ namespace SlothCord.Objects
         public ulong? ApplicationId { get; private set; }
 
         [JsonProperty("icon")]
-        public string IconUrl { get; internal set; }
+        private string Icon { get; set; }
+
+        [JsonIgnore]
+        public string IconUrl { get => $"https://cdn.discordapp.com/icons/{this.Id}/{this.Icon}.png"; }
 
         [JsonProperty("splash")]
         public string SplashUrl { get; private set; }
