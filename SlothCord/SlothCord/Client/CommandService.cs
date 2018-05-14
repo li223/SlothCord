@@ -279,7 +279,7 @@ namespace SlothCord.Commands
                         else if (cachedUser != null) currentarg = cachedUser;
                         else currentarg = currentarg as string;
                     }
-                    else if(new Regex(@"([\d]{18,20})").IsMatch(currentarg as string))
+                    else if(new Regex(@"^([\d]{18,20})$").IsMatch(currentarg as string))
                     {
                         var id = ulong.Parse(currentarg as string);
                         var cachedUser = client.InternalUserCache?.FirstOrDefault(x => x.Id == id);
