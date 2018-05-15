@@ -219,6 +219,7 @@ namespace SlothCord.Commands
         internal async Task ExecuteCommandAsync(DiscordClient client, DiscordMessage msg, List<object> Args, IEnumerable<ParameterInfo> TargetArgs, SlothUserCommand cmd, SlothCommandContext context)
         {
             var precheck = cmd.Method.GetCustomAttribute(typeof(PreCheckAttribute), true);
+            precheck = cmd.ClassInstance.GetType().GetCustomAttribute(typeof(PreCheckAttribute));
             if(precheck != null)
             {
                 var result = await (precheck as PreCheckAttribute).ExecuteCommandAsync(context, msg).ConfigureAwait(false);
