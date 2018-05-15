@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
@@ -219,10 +219,10 @@ namespace SlothCord.Commands
         
         internal async Task ExecuteCommandAsync(DiscordClient client, DiscordMessage msg, List<object> Args, IEnumerable<ParameterInfo> TargetArgs, SlothUserCommand cmd, SlothCommandContext context)
         {
-            var precheck = cmd.Method.GetCustomAttribute(typeof(PreCheckAttribute));
+            var precheck = cmd.Method.GetCustomAttribute(typeof(PreCheckAttribute), true);
             if(precheck != null)
             {
-                var result = await (precheck as PreCheckAttribute).ExecuteCommandAsync(context).ConfigureAwait(false);
+                var result = await (precheck as PreCheckAttribute).ExecuteCommandAsync(context, msg).ConfigureAwait(false);
                 if(!result)
                 {
                     CommandErrored?.Invoke(this, new CommandErroredArgs()
@@ -237,7 +237,6 @@ namespace SlothCord.Commands
             }
             var RequiredArgs = TargetArgs.ToList();
             if (RequiredArgs[0].ParameterType == typeof(SlothCommandContext)) RequiredArgs.Remove(RequiredArgs[0]);
-            if (cmd.Method.HasAttribute<RequireOwnerAttribute>() && (msg.Author.Id != client.CurrentUser.Id)) return;
             if(!AllowDmCommands && !client.Guilds.Any(x => x.Channels.Any(a => a.Id == msg.ChannelId))) return;
 
             var passargs = new List<object>();
@@ -373,7 +372,7 @@ namespace SlothCord.Commands
         public string GroupName { get; private set; }
         public bool InvokeWithoutSubCommand { get; private set; }
     }
-
+    
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
     public class AliasesAttribute : Attribute
     {
@@ -388,21 +387,23 @@ namespace SlothCord.Commands
     public class RemainingStringAttribute : Attribute { }
 
     [AttributeUsage(AttributeTargets.Method)]
-    public class RequireOwnerAttribute : Attribute { }
+    public class RequireOwnerAttribute : PreCheckAttribute
+    {
+        public override Task<bool> ExecuteCommandAsync(SlothCommandContext ctx, DiscordMessage msg)
+            => Task.FromResult(ctx.Client.CurrentApplication.Owner.Id == msg.Author.Id);
+    }
 
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
     public class PreCheckAttribute : Attribute
     {
-        public virtual Task<bool> ExecuteCommandAsync(SlothCommandContext ctx)
+        public virtual Task<bool> ExecuteCommandAsync(SlothCommandContext ctx, DiscordMessage msg)
             => Task.FromResult(true);
     }
 
     public static class Extensions
     {
         public static bool HasAttribute<T>(this MethodInfo method)
-        {
-            return method.CustomAttributes.Any(x => x.AttributeType == typeof(T));
-        }
+            => method.CustomAttributes.Any(x => x.AttributeType == typeof(T));
     }
 
     #endregion
