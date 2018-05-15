@@ -35,6 +35,20 @@ namespace SlothCord
         {
 
         }
+
+        internal async Task<DiscordApplication> GetCurrentApplicationAsync()
+        {
+            var msg = new HttpRequestMessage(HttpMethod.Get, new Uri($"{_baseAddress}/oauth2/applications/@me"));
+            var response = await _httpClient.SendAsync(msg).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordApplication>(content);
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
+                    return JsonConvert.DeserializeObject<DiscordApplication>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg).ConfigureAwait(false));
+                else throw new Exception($"Returned Message: {content}");
+            }
+        }
     }
 
     public class MessageMethods : ApiBase
