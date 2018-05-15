@@ -424,11 +424,11 @@ namespace SlothCord
                                         {
                                             member.Guild = guild;
                                             member.Nickname = pl.Nickname;
-                                            member.UserData.Status = pl.Status;
                                             var roles = new List<DiscordRole>();
                                             foreach (var id in member.RoleIds)
                                                 roles.Add(guild.Roles.FirstOrDefault(x => x.Id == id));
                                             member.Roles = roles;
+                                            member.UserData = pl.User;
                                             member.UserData.Activity = pl.Activity;
                                         }
                                         else if (user != null) user.Activity = pl.Activity;
@@ -877,6 +877,6 @@ namespace SlothCord
             WebSocketClient.Send(payload);
             return Task.CompletedTask;
         }
-#endregion
+        #endregion
     }
 }
