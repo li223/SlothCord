@@ -297,12 +297,6 @@ namespace SlothCord
 
         private async void WebSocketClient_MessageReceived(object sender, MessageReceivedEventArgs e)
         {
-            if (LogActions)
-            {
-                Console.ForegroundColor = ConsoleColor.DarkGreen;
-                Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Socket Message Received");
-                Console.ForegroundColor = ConsoleColor.White;
-            }
             var data = JsonConvert.DeserializeObject<GatewayPayload>(e.Message);
             if (!string.IsNullOrEmpty(data.Sequence.ToString()))
                 _sequence = (int)data.Sequence;
@@ -337,11 +331,6 @@ namespace SlothCord
                     }
                 case (int)OPCode.Dispatch:
                     {
-                        if (LogActions)
-                        {
-                            Console.ForegroundColor = ConsoleColor.Cyan;
-                            Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Gateway DISPATCH");
-                        }
 #if NETCORE
                         var obj = Enum.TryParse(typeof(DispatchType), data.EventName, out var res);
 #elif NETFX47
