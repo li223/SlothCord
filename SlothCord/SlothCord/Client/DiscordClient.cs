@@ -113,6 +113,8 @@ namespace SlothCord
         /// </summary>
         public DiscordUser CurrentUser { get; internal set; }
 
+        public DiscordApplication CurrentApplication { get; internal set; }
+
         public string VersionString { get => FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(this.GetType()).Location).FileVersion; }
         #endregion
 
@@ -364,6 +366,7 @@ namespace SlothCord
                                         var pl = data.EventPayload as ReadyPayload;
                                         _sessionId = pl.SessionId;
                                         this.CurrentUser = pl.User;
+                                        this.CurrentApplication = await base.GetCurrentApplicationAsync().ConfigureAwait(false);
                                         ClientReady?.Invoke(this, new OnReadyArgs()
                                         {
                                             GatewayVersion = pl.Version,
