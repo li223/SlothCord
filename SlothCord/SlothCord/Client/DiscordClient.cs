@@ -113,6 +113,8 @@ namespace SlothCord
         /// </summary>
         public DiscordUser CurrentUser { get; internal set; }
 
+        public DiscordApplication CurrentApplication { get; internal set; }
+
         public string VersionString { get => FileVersionInfo.GetVersionInfo(Assembly.GetAssembly(this.GetType()).Location).FileVersion; }
         #endregion
 
@@ -353,6 +355,7 @@ namespace SlothCord
                                         var pl = data.EventPayload as ReadyPayload;
                                         _sessionId = pl.SessionId;
                                         this.CurrentUser = pl.User;
+                                        this.CurrentApplication = await base.GetCurrentApplicationAsync().ConfigureAwait(false);
                                         ClientReady?.Invoke(this, new OnReadyArgs()
                                         {
                                             GatewayVersion = pl.Version,
@@ -410,11 +413,11 @@ namespace SlothCord
                                         {
                                             member.Guild = guild;
                                             member.Nickname = pl.Nickname;
-                                            member.UserData.Status = pl.Status;
                                             var roles = new List<DiscordRole>();
                                             foreach (var id in member.RoleIds)
                                                 roles.Add(guild.Roles.FirstOrDefault(x => x.Id == id));
                                             member.Roles = roles;
+                                            member.UserData = pl.User;
                                             member.UserData.Activity = pl.Activity;
                                         }
                                         else if (user != null) user.Activity = pl.Activity;
@@ -863,6 +866,6 @@ namespace SlothCord
             WebSocketClient.Send(payload);
             return Task.CompletedTask;
         }
-#endregion
+        #endregion
     }
 }

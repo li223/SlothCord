@@ -1,5 +1,7 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using System;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace SlothCord.Objects
@@ -49,7 +51,17 @@ namespace SlothCord.Objects
         private string Avatar { get; set; }
 
         [JsonIgnore]
-        public DateTimeOffset CreatedAt { get; private set; }
+        public DateTimeOffset CreatedAt
+        {
+            get
+            {
+                var bin = this.Id.ToString("2");
+                var sb = new StringBuilder();
+                bin.Split().Take(64).Select(x => sb.Append(x));
+                var de = (int.Parse(sb.ToString())) + 1420070400000;
+                return DateTimeOffset.FromUnixTimeMilliseconds(de);
+            }
+        }
 
         [JsonIgnore]
         public string Mention { get => $"<@{this.Id}>"; }
