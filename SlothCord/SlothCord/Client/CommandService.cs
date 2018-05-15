@@ -150,7 +150,6 @@ namespace SlothCord.Commands
                 Member = member,
                 Services = this.Services
             };
-            context.Guild = guild;
             List<object> Args = new List<object>();
             Args.AddRange(msg.Content.Replace(this.StringPrefix, "").Split(' ').ToList());
             var group = UserDefinedGroups.FirstOrDefault(x => x.GroupName == (string)Args[0]);
