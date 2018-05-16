@@ -191,7 +191,7 @@ namespace SlothCord.Objects
         public string Nickname { get; set; }
 
         [JsonProperty("roles")]
-        public IEnumerable<DiscordRole> Roles { get; set; }
+        public IEnumerable<ulong> Roles { get; set; }
 
         [JsonProperty("mute" , NullValueHandling = NullValueHandling.Ignore)]
         public bool? IsMute { get; set; }

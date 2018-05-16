@@ -63,7 +63,7 @@ namespace SlothCord
                 Embed = embed
             };
 
-            var msg = new HttpRequestMessage(HttpMethod.Put, new Uri($"{_baseAddress}/channels/{channel_id}/messages/{message_id}"))
+            var msg = new HttpRequestMessage(new HttpMethod("PATCH"), new Uri($"{_baseAddress}/channels/{channel_id}/messages/{message_id}"))
             {
                 Content = new StringContent(JsonConvert.SerializeObject(obj))
             };
@@ -107,17 +107,19 @@ namespace SlothCord
     {
         internal async Task ModifyAsync(ulong guild_id, ulong member_id, string nickname, IReadOnlyList<DiscordRole> roles, bool? is_muted, bool? is_deaf, ulong? channel_id)
         {
-            var request = new HttpRequestMessage(HttpMethod.Put, new Uri($"{_baseAddress}/guilds/{guild_id}/members/{member_id}"))
+            var jsondata = JsonConvert.SerializeObject(new MemberModifyPayload()
             {
-                Content = new StringContent(JsonConvert.SerializeObject(new MemberModifyPayload()
-                {
-                    Nickname = nickname,
-                    Roles = roles,
-                    IsMute = is_muted,
-                    IsDeaf = is_deaf,
-                    ChannelId = channel_id
-                }))
+                Nickname = nickname,
+                Roles = roles.Select(x => x.Id),
+                IsMute = is_muted,
+                IsDeaf = is_deaf,
+                ChannelId = channel_id
+            });
+            var request = new HttpRequestMessage(new HttpMethod("PATCH"), new Uri($"{_baseAddress}/guilds/{guild_id}/members/{member_id}"))
+            {
+                Content = new StringContent(jsondata, Encoding.UTF8, "application/json")
             };
+
             var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)

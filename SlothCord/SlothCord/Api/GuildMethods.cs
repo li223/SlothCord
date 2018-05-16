@@ -10,9 +10,21 @@ namespace SlothCord
 {
     public class GuildMethods : ApiBase
     {
+        internal async Task<IReadOnlyList<DiscordInvite>> GetGuildInvitesAsync(ulong guild_id)
+        {
+            var query = $"{_baseAddress}/guilds/{guild_id}/invites";
+            var msg = new HttpRequestMessage(HttpMethod.Get, new Uri(query));
+            var response = await _httpClient.SendAsync(msg);
+            var content = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) { return JsonConvert.DeserializeObject<IReadOnlyList<DiscordInvite>>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg)); }
+                else { return null; }
+            else return JsonConvert.DeserializeObject<IReadOnlyList<DiscordInvite>>(content);
+        }
+
         internal async Task<GuildEmbed> ModifyGuildEmbedAsync(ulong guild_id, bool enabled, ulong channel_id)
         {
-            var msg = new HttpRequestMessage(HttpMethod.Put, new Uri($"{_baseAddress}/guilds/{guild_id}/embed"))
+            var msg = new HttpRequestMessage(new HttpMethod("PATCH"), new Uri($"{_baseAddress}/guilds/{guild_id}/embed"))
             {
                 Content = new StringContent(JsonConvert.SerializeObject(new GuildEmbed()
                 {
@@ -82,7 +94,7 @@ namespace SlothCord
             var query = $"{_baseAddress}/guilds/{guild_id}/bans/{member_id}?delete-message-days={clear_days}";
             if (reason != null)
                 query += $"&reason={reason}";
-            var request = new HttpRequestMessage(HttpMethod.Put, new Uri(query));
+            var request = new HttpRequestMessage(new HttpMethod("PATCH"), new Uri(query));
             var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)

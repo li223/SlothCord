@@ -19,8 +19,8 @@ namespace SlothCord.Objects
         public async Task<DiscordInvite> DeleteInviteAsync(string code)
             => await base.DeleteDiscordInviteAsync(code).ConfigureAwait(false);
 
-        public async Task<DiscordInvite> GetInviteAsync(string code, int? count = null)
-            => await base.GetDiscordInviteAsync(code, count).ConfigureAwait(false);
+        public async Task<IReadOnlyList<DiscordInvite>> GetInvitesAsync()
+            => await base.GetChannelInvitesAsync(this.Id).ConfigureAwait(false);
 
         public async Task DeleteMessageAsync(ulong message_id)
             => await base.DeleteChannelMessageAsync(this.Id, message_id).ConfigureAwait(false);

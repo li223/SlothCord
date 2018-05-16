@@ -57,18 +57,16 @@ namespace SlothCord
             else return null;
         }
 
-        internal async Task<DiscordInvite> GetDiscordInviteAsync(string code, int? with_counts = null)
+        internal async Task<IReadOnlyList<DiscordInvite>> GetChannelInvitesAsync(ulong channel_id)
         {
-            var query = $"{_baseAddress}/invites/{code}";
-            if (with_counts != null)
-                query += $"/with_counts/{with_counts}";
+            var query = $"{_baseAddress}/channels/{channel_id}/invites";
             var msg = new HttpRequestMessage(HttpMethod.Get, new Uri(query));
             var response = await _httpClient.SendAsync(msg);
             var content = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
-                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) { return JsonConvert.DeserializeObject<DiscordInvite>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg)); }
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) { return JsonConvert.DeserializeObject<IReadOnlyList<DiscordInvite>>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg)); }
                 else { return null; }
-            else return JsonConvert.DeserializeObject<DiscordInvite>(content);
+            else return JsonConvert.DeserializeObject<IReadOnlyList<DiscordInvite>>(content);
         }
 
         internal async Task BulkDeleteGuildMessagesAsync(ulong? guild_id, ulong channel_id, IReadOnlyList<ulong> message_ids)
@@ -148,7 +146,7 @@ namespace SlothCord
 
         internal async Task<DiscordChannel> ModifyGuildChannelAsync(ulong channel_id, string name = null, int? position = null, string topic = null, bool? nsfw = null, int? bitrate = null, int? user_limit = null, IReadOnlyList<ChannelOverwrite> permission_overwrites = null, ulong? parent_id = null)
         {
-            var msg = new HttpRequestMessage(HttpMethod.Put, new Uri($"{_baseAddress}/channels/{channel_id}"))
+            var msg = new HttpRequestMessage(new HttpMethod("PATCH"), new Uri($"{_baseAddress}/channels/{channel_id}"))
             {
                 Content = new StringContent(JsonConvert.SerializeObject(new ChannelModifyPayload()
                 {

@@ -8,6 +8,9 @@ namespace SlothCord.Objects
 {
     public sealed class DiscordGuild : GuildMethods
     {
+        public async Task<IReadOnlyList<DiscordInvite>> GetInvitesAsync()
+            => await base.GetGuildInvitesAsync(this.Id).ConfigureAwait(false);
+
         public async Task<GuildEmbed> GetEmbedAsync()
             => await base.GetGuildEmbedAsync(this.Id);
 

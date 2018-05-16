@@ -28,7 +28,7 @@ namespace SlothCord.Commands
 
         public event OnCommandError CommandErrored;
 
-        public void RegisterCommand<T>() where T : new()
+        public void RegisterCommands<T>() where T : new()
         {
             var type = typeof(T);
             var groups = type.GetNestedTypes().Where(x => x.GetCustomAttribute<GroupAttribute>() != null);
@@ -79,7 +79,7 @@ namespace SlothCord.Commands
             }));
         }
 
-        public void RegisterCommand(object obj)
+        public void RegisterCommands(object obj)
         {
             var type = obj as Type;
             var groups = type.GetNestedTypes().Where(x => x.GetCustomAttribute<GroupAttribute>() != null);
