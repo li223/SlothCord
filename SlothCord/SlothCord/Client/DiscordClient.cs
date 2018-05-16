@@ -5,11 +5,9 @@ using SlothCord.Objects;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 using WebSocket4Net;
 
@@ -137,8 +135,7 @@ namespace SlothCord
             if (string.IsNullOrEmpty(this.Token))
                 throw new ArgumentException("Token cannot be null");
             _httpClient.DefaultRequestHeaders.Add("Authorization", $"{TokenType} {this.Token}");
-            this.Token = this.Token;
-            _httpClient.DefaultRequestHeaders.Add("User-Agent", "DiscordBot ($https://github.com/li223/SlothCord, $2.2.5)");
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", $"DiscordBot ($https://github.com/li223/SlothCord, ${this.VersionString})");
             var request = new HttpRequestMessage(HttpMethod.Get, new Uri($"{_baseAddress}/gateway/bot"));
             var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -151,7 +148,7 @@ namespace SlothCord
                     Console.ForegroundColor = ConsoleColor.White;
                 }
                 var jobj = JsonConvert.DeserializeObject<HttpPayload>(content);
-                WebSocketClient = new WebSocket(jobj.WSUrl);
+                WebSocketClient = new WebSocket(jobj.WSUrl) { EnableAutoSendPing = false };
                 WebSocketClient.MessageReceived += WebSocketClient_MessageReceived;
                 WebSocketClient.Closed += WebSocketClient_Closed;
 #if NETCORE
@@ -160,20 +157,7 @@ namespace SlothCord
                 WebSocketClient.Open();
 #endif
             }
-            else
-            {
-                if (LogActions)
-                {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Action errored: {JObject.Parse(content).SelectToken("message")}");
-                    Console.ForegroundColor = ConsoleColor.White;
-                }
-                ClientErrored?.Invoke(this, new ClientErroredArgs()
-                {
-                    Message = $"Server responded with: {JObject.Parse(content).SelectToken("message")}",
-                    Source = "HttpClient"
-                });
-            }
+            else throw new Exception($"Responded with: {content}");
         }
 
         private Task SendIdentifyAsync()
