@@ -1,7 +1,7 @@
 # SlothCord
-Please don't use this lib. Use [DSharpPlus instead](https://www.github.com/DSharpPlus/DSharpPlus)
+Note: The master branch is fucntional (mostly) but the library is being rewritten. It is not recommended you use the rewrite branch as objects and references will be missing.
 
-# If you really want to
+# Examples
 Examples can be found [here](https://github.com/li223/SlothCord-Examples)
 
 # How do use lib?
@@ -11,4 +11,4 @@ Examples can be found [here](https://github.com/li223/SlothCord-Examples)
 4) If it breaks, I blame you
 
 # What if I have a burning question?
-Then erm... IDK you could try find me on Discord: li223#5153 (Glhf with that)
+You can try to find me on Discord: li223#5153
