@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace SlothCord.Objects
 {
-    public sealed class DiscordChannel
+    public sealed class DiscordChannel : ChannelMethods
     {
         public async Task<DiscordMessage> SendFileAsync(string file_path, string message = null)
             => await base.CreateMessageWithFile(this.Id, file_path, message).ConfigureAwait(false);
@@ -17,12 +17,6 @@ namespace SlothCord.Objects
 
         public async Task DeleteMessageAsync(DiscordMessage message)
             => await base.DeleteChannelMessageAsync(this.Id, message.Id).ConfigureAwait(false);
-
-        public async Task BulkDeleteAsync(IReadOnlyList<ulong> ids)
-            => await base.BulkDeleteGuildMessagesAsync(this.GuildId, this.Id, ids).ConfigureAwait(false);
-
-        public async Task BulkDeleteAsync(IReadOnlyList<DiscordMessage> msgs)
-            => await base.BulkDeleteGuildMessagesAsync(this.GuildId, this.Id, msgs.Select(x => x.Id) as IReadOnlyList<ulong>).ConfigureAwait(false);
 
         public async Task<DiscordMessage> SendMessageAsync(string message = null, bool is_tts = false, DiscordEmbed embed = null)
             => await base.CreateMessageAsync(this.Id, message, is_tts, embed).ConfigureAwait(false);
@@ -41,6 +35,9 @@ namespace SlothCord.Objects
 
         [JsonProperty("name")]
         public string Name { get; internal set; }
+
+        [JsonProperty("icon")]
+        public string IconUrl { get; private set; }
 
         [JsonProperty("type")]
         public ChannelType Type { get; private set; }

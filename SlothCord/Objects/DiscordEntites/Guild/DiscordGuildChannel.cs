@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace SlothCord.Objects
 {
-    public sealed class DiscordGuildChannel
+    public sealed class DiscordGuildChannel : ChannelMethods
     {
         public async Task<DiscordChannel> ModifyAsync(string name = null, int? position = null, string topic = null, bool? nsfw = null, int? bitrate = null, int? user_limit = null, IReadOnlyList<ChannelOverwrite> permission_overwrites = null, ulong? parent_id = null)
             => await base.ModifyGuildChannelAsync(this.Id, name, position, topic, nsfw, bitrate, user_limit, permission_overwrites, parent_id);
@@ -67,25 +67,19 @@ namespace SlothCord.Objects
         public bool Nsfw { get; internal set; }
 
         [JsonProperty("parent_id")]
-        public ulong ParentId { get; private set; }
+        public ulong? ParentId { get; private set; }
 
         [JsonProperty("bitrate")]
-        public int Bitrate { get; internal set; }
+        public int? Bitrate { get; internal set; }
 
         [JsonProperty("user_limit")]
-        public int UserLimit { get; internal set; }
+        public int? UserLimit { get; internal set; }
 
         [JsonProperty("last_message_id")]
-        public ulong LastMessageId { get; private set; }
-
-        [JsonProperty("icon")]
-        public string IconUrl { get; private set; }
+        public ulong? LastMessageId { get; private set; }
 
         [JsonProperty("recipients")]
         public IReadOnlyList<DiscordUser> Recipients { get; private set; }
-
-        [JsonProperty("owner_id")]
-        public ulong OwnerId { get; private set; }
 
         [JsonIgnore]
         public string Mention { get => $"<@#{this.Id}>"; }
