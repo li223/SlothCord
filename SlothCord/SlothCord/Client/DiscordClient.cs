@@ -1,7 +1,6 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using SlothCord.Commands;
-using SlothCord.Objects;
+using SlothCord.Objects.ClientEntites;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -55,10 +54,10 @@ namespace SlothCord
         /// </summary>
         public int LargeThreashold { get; set; } = 250;
 
-        /// <summary>
+       /* /// <summary>
         /// Command service used for bot commands
         /// </summary>
-        public CommandService Commands { get; set; }
+        public CommandService Commands { get; set; }*/
 
         /// <summary>
         /// The current client as a user

@@ -2,11 +2,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
-namespace SlothCord.Objects
+namespace SlothCord.Objects.DiscordEntites
 {
-    public sealed class DiscordGuild : GuildMethods
+    public sealed class DiscordGuild
     {
         public async Task<IReadOnlyList<DiscordInvite>> GetInvitesAsync()
             => await base.GetGuildInvitesAsync(this.Id).ConfigureAwait(false);
@@ -40,13 +41,13 @@ namespace SlothCord.Objects
 
         public async Task<AuditLogData> GetAuditLogsAsync(ulong? user_id = null, AuditActionType? action_type = null, ulong? before = null, int? limit = null)
             => await base.ListAuditLogsAsync(this.Id, user_id, action_type, before, limit).ConfigureAwait(false);
-
+        
         public async Task LeaveAsync()
             => await base.LeaveGuildAsync(this.Id).ConfigureAwait(false);
 
         public async Task<DiscordChannel> GetChannelAsync(ulong channel_id)
             => await base.ListGuildChannelAsync(this.Id, channel_id).ConfigureAwait(false);
-
+        
         public async Task<DiscordGuildMember> GetMemberAsync(ulong user_id)
         {
             var member = await base.ListGuildMemberAsync(this.Id, user_id).ConfigureAwait(false);
@@ -133,7 +134,7 @@ namespace SlothCord.Objects
 
         [JsonProperty("mfa_level")]
         public MFALevel? MfaLevel { get; private set; }
-
+        
         [JsonProperty("widget_enabled")]
         public bool? WidgetEnabled { get; private set; }
 
@@ -152,6 +153,7 @@ namespace SlothCord.Objects
         [JsonProperty("presences")]
         public IReadOnlyList<DiscordPresence> Presences { get; private set; }
 
+
         [JsonProperty("members")]
         public IReadOnlyList<DiscordGuildMember> Members { get; internal set; }
 
@@ -161,4 +163,6 @@ namespace SlothCord.Objects
         [JsonIgnore]
         public DateTimeOffset CreatedAt { get; internal set; }
     }
+
+}
 }
