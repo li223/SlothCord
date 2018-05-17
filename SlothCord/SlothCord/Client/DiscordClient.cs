@@ -32,6 +32,7 @@ namespace SlothCord
         public event OnGuildAvailable GuildAvailable;
         public event OnUnknownEvent UnknownEvent;
         public event OnWebSocketClose SocketClosed;
+        public event OnWebSocketOpen SocketOpened;
         public event OnHeartbeat Heartbeated;
         public event OnReady ClientReady;
         public event OnClientError ClientErrored;
@@ -153,8 +154,10 @@ namespace SlothCord
                 WebSocketClient.Closed += WebSocketClient_Closed;
 #if NETCORE
                 await WebSocketClient.OpenAsync().ConfigureAwait(false);
+                SocketOpened?.Invoke(this);
 #elif NETFX47
                 WebSocketClient.Open();
+                SocketOpened?.Invoke(this);
 #endif
             }
             else throw new Exception($"Responded with: {content}");
@@ -249,24 +252,40 @@ namespace SlothCord
                 SocketClosed?.Invoke(this, data);
 #if NETCORE
                 if (WebSocketClient.State == WebSocketState.Open || WebSocketClient.State == WebSocketState.Connecting)
+                {
                     await WebSocketClient.CloseAsync().ConfigureAwait(false);
+                    SocketClosed?.Invoke(this, new OnWebSocketClosedArgs()
+                    {
+                        Code = CloseCode.GracefulClose
+                    });
+                }
                 await WebSocketClient.OpenAsync().ConfigureAwait(false);
+                SocketOpened?.Invoke(this);
 #elif NETFX47
                 if (WebSocketClient.State == WebSocketState.Open || WebSocketClient.State == WebSocketState.Connecting)
+                {
                     WebSocketClient.Close();
+                    SocketClosed?.Invoke(this, new OnWebSocketClosedArgs()
+                    {
+                        Code = CloseCode.GracefulClose
+                    });
+                }
                 WebSocketClient.Open();
+                SocketOpened?.Invoke(this);
 #endif
             }
             else
             {
                 _heartbeat = false;
-/*
-#if NETCORE
-                await WebSocketClient.OpenAsync().ConfigureAwait(false);
-#else
-                WebSocketClient.Open();
-#endif
-*/
+                /*
+                #if NETCORE
+                                await WebSocketClient.OpenAsync().ConfigureAwait(false);
+                                SocketOpened?.Invoke(this);
+                #else
+                                WebSocketClient.Open();
+                                SocketOpened?.Invoke(this);
+                #endif
+                */
             }
         }
 
@@ -693,10 +712,22 @@ namespace SlothCord
                         }
 #if NETCORE
                         await WebSocketClient.CloseAsync().ConfigureAwait(false);
+                        SocketClosed?.Invoke(this, new OnWebSocketClosedArgs()
+                        {
+                            Code = CloseCode.GracefulClose,
+                            Message = "Reconnect"
+                        });
                         await WebSocketClient.OpenAsync().ConfigureAwait(false);
+                        SocketOpened?.Invoke(this);
 #elif NETFX47
                         WebSocketClient.Close();
+                        SocketClosed?.Invoke(this, new OnWebSocketClosedArgs()
+                        {
+                            Code = CloseCode.GracefulClose,
+                            Message = "Reconnect"
+                        });
                         WebSocketClient.Open();
+                        SocketOpened?.Invoke(this);
 #endif
                         _heartbeat = true;
                         var tsk = new Task(SendHeartbeats);

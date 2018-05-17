@@ -327,9 +327,7 @@ namespace SlothCord.Commands
         public DiscordClient Client { get; internal set; }
 
         public async Task<DiscordMessage> RespondAsync(string text = null, bool is_tts = false, DiscordEmbed embed = null)
-        {
-            return await Channel.SendMessageAsync(text, is_tts, embed);
-        }
+            => await Channel.SendMessageAsync(text, is_tts, embed);
     }
 
     public class SlothUserCommand

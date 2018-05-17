@@ -21,6 +21,8 @@ namespace SlothCord
     public delegate void OnClientError(object sender, ClientErroredArgs e);
     public delegate void OnSocketDataReceived(object sender, string e);
     public delegate void OnPresenceUpdate(object sender, PresenceUpdateArgs e);
+    public delegate void OnWebSocketOpen(object sender);
+    public delegate void OnMemberRemove(object sender, DiscordUser user);
 
     public class OnWebSocketClosedArgs : EventArgs
     {
