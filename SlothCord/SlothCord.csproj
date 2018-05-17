@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Objects\GatewayEntites\" />
+    <Folder Include="SlothCord\CommandService\" />
     <Folder Include="SlothCord\Socket\" />
   </ItemGroup>
 

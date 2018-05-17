@@ -51,7 +51,7 @@ namespace SlothCord.Objects
         [JsonProperty("id")]
         public ulong Id { get; private set; }
 
-        [JsonProperty("guild_id", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("guild_id")]
         public ulong? GuildId { get; private set; }
 
         [JsonProperty("name")]
@@ -60,31 +60,31 @@ namespace SlothCord.Objects
         [JsonProperty("type")]
         public ChannelType Type { get; private set; }
 
-        [JsonProperty("permission_overwrites", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("permission_overwrites")]
         public IReadOnlyList<ChannelOverwrite> Permissions { get; internal set; }
 
         [JsonProperty("nsfw")]
         public bool Nsfw { get; internal set; }
 
-        [JsonProperty("parent_id", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("parent_id")]
         public ulong ParentId { get; private set; }
 
-        [JsonProperty("bitrate", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("bitrate")]
         public int Bitrate { get; internal set; }
 
-        [JsonProperty("user_limit", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("user_limit")]
         public int UserLimit { get; internal set; }
 
-        [JsonProperty("last_message_id", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("last_message_id")]
         public ulong LastMessageId { get; private set; }
 
-        [JsonProperty("icon", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("icon")]
         public string IconUrl { get; private set; }
 
-        [JsonProperty("recipients", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("recipients")]
         public IReadOnlyList<DiscordUser> Recipients { get; private set; }
 
-        [JsonProperty("owner_id", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty("owner_id")]
         public ulong OwnerId { get; private set; }
 
         [JsonIgnore]

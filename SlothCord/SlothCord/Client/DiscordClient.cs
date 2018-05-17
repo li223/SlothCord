@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using SlothCord.Objects.ClientEntites;
+using SlothCord.Objects;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -54,6 +54,8 @@ namespace SlothCord
         /// </summary>
         public int LargeThreashold { get; set; } = 250;
 
+        public string Version { get => FileVersionInfo.GetVersionInfo(Assembly.GetCallingAssembly().Location).FileVersion; }
+
        /* /// <summary>
         /// Command service used for bot commands
         /// </summary>
@@ -73,6 +75,8 @@ namespace SlothCord
         {
             if (string.IsNullOrWhiteSpace(this.Token)) throw new ArgumentNullException("You must supply a valid token");
             if (TokenType != TokenType.Bot) throw new ArgumentException("Only Bot tokens are currently supported");
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bot {this.Token}");
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", $"DiscordBot ($https://github.com/li223/SlothCord, ${this.Version})");
             var response = await _httpClient.GetAsync($"{_baseAddress}/gateway/bot").ConfigureAwait(false);
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             var data = JObject.Parse(content);
@@ -85,7 +89,26 @@ namespace SlothCord
 #else
             WebSocketClient.Open();
 #endif
+        }
 
+        private Task SendIdentifyAsync()
+        {
+            var Content = JObject.Parse(JsonConvert.SerializeObject(new IdentifyPayload()
+            {
+                Token = $"{this.TokenType} {this.Token}",
+                Properties = new Properties(),
+                Compress = false,
+                LargeThreashold = this.LargeThreashold,
+                Shard = new[] { 0, 1 }
+            }));
+            var pldata = new GatewayEvent()
+            {
+                Code = (int)OPCode.Identify,
+                EventPayload = Content
+            };
+            var payload = JsonConvert.SerializeObject(pldata);
+            WebSocketClient.Send(payload);
+            return Task.CompletedTask;
         }
     }
 }
