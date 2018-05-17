@@ -31,7 +31,7 @@ namespace SlothCord
             return content;
         }
 
-        protected internal async Task HandleLimitAsync(HttpRequestMessage msg, KeyValuePair<int, int> requests, int limit)
+        protected internal async Task HandleRequestAsync()
         {
 
         }
