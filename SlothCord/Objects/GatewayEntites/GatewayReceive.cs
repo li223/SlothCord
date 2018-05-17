@@ -13,10 +13,10 @@ namespace SlothCord.Objects
         public int? Sequence { get; set; }
 
         [JsonProperty("op")]
-        public int Code { get; set; }
+        public OPCode Code { get; set; }
 
         [JsonProperty("d")]
-        public object EventPayload { get; set; }
+        public string EventPayload { get; set; }
     }
 
     internal struct ReadyPayload

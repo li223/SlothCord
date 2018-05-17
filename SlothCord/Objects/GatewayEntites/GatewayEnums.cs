@@ -11,7 +11,7 @@ namespace SlothCord.Objects
         User = 2
     }
 
-    public enum OPCode
+    public enum OPCode : int
     {
         Dispatch = 0,
         Heartbeat = 1,
