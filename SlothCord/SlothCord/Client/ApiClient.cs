@@ -9,7 +9,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Net.Http.Headers;
 using SlothCord.Objects;
-using SlothCord.Objects.DiscordEntites;
 
 namespace SlothCord
 {

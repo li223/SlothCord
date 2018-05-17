@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <Folder Include="Objects\GatewayEntites\" />
+    <Folder Include="SlothCord\Socket\" />
   </ItemGroup>
 
 </Project>

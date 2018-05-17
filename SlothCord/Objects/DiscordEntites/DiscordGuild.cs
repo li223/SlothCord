@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SlothCord.Objects.DiscordEntites
+namespace SlothCord.Objects
 {
     public sealed class DiscordGuild
     {

@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace SlothCord.Objects.DiscordEntites
+namespace SlothCord.Objects
 {
     public struct DiscordApplication
     {
