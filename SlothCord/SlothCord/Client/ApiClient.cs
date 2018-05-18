@@ -31,11 +31,6 @@ namespace SlothCord
             return content;
         }
 
-        protected internal async Task HandleRequestAsync()
-        {
-
-        }
-
         internal async Task<DiscordApplication> GetCurrentApplicationAsync()
         {
             var msg = new HttpRequestMessage(HttpMethod.Get, new Uri($"{_baseAddress}/oauth2/applications/@me"));
