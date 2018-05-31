@@ -76,7 +76,7 @@ namespace SlothCord
 
         public IReadOnlyList<DiscordGuild> Guilds { get; internal set; }
 
-        private List<IDiscordGuild> InternalGuilds { get; set; }
+        private List<DiscordGuild> InternalGuilds { get; set; }
 
         private bool _heartbeat = true;
 
@@ -190,11 +190,12 @@ namespace SlothCord
                     {
                         //Guild Create Event
                         var guild = JsonConvert.DeserializeObject<DiscordGuild>(payload);
-                        this.Guilds
+                        this.InternalGuilds.Add(guild);
+                        break;
                     }
                 case DispatchType.MessageCreate:
                     {
-                        var msg = JsonConvert.DeserializeObject<IDiscordMessage>(payload);
+                        var msg = JsonConvert.DeserializeObject<DiscordMessage>(payload);
                         //if(msg.Content.StartsWith(prefix))
                         //Command start here
                         //Message Create Event

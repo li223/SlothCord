@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace SlothCord.Objects
 {
-    public sealed class DiscordMessage : MessageMethods
+    public class DiscordMessage : MessageMethods
     {
         public async Task<DiscordMessage> EditAsync(string content = null, DiscordEmbed embed = null)
         {
@@ -26,7 +26,7 @@ namespace SlothCord.Objects
         public ulong? ChannelId { get; private set; }
 
         [JsonProperty("author")]
-        public DiscordUser Author { get; private set; }
+        public DiscordUser UserAuthor { get; private set; }
 
         [JsonProperty("content")]
         public string Content { get; private set; }
@@ -44,10 +44,7 @@ namespace SlothCord.Objects
         public bool MentionsEveryone { get; private set; }
 
         [JsonProperty("mentions")]
-        public IReadOnlyList<DiscordUser> Mentions { get; private set; }
-
-        [JsonProperty("mention_roles")]
-        public IReadOnlyList<ulong> MentionRoleIds { get; private set; }
+        public IReadOnlyList<DiscordUser> UserMentions { get; private set; }
 
         [JsonProperty("attachments")]
         public IReadOnlyList<DiscordAttachment> Attachments { get; private set; }
@@ -56,7 +53,7 @@ namespace SlothCord.Objects
         public IReadOnlyList<DiscordEmbed> Embeds { get; private set; }
 
         [JsonProperty("reactions")]
-        public IReadOnlyList<DiscordReaction> Reactions { get; private set; }
+        public IReadOnlyList<DiscordEmoji> Reactions { get; private set; }
 
         [JsonProperty("nonce")]
         public ulong? Nonce { get; private set; }
@@ -64,19 +61,13 @@ namespace SlothCord.Objects
         [JsonProperty("pinned")]
         public bool IsPinned { get; private set; }
 
-        [JsonProperty("webhook_id")]
-        public ulong? WebhookId { get; private set; }
-
         [JsonProperty("type")]
         public MessageType Type { get; private set; }
 
         [JsonProperty("activity")]
-        public DiscordActivity Activity { get; private set; }
+        public DiscordMessageActivity Activity { get; private set; }
 
         [JsonProperty("application")]
-        public DiscordApplication Application { get; private set; }
-
-        [JsonIgnore]
-        public IReadOnlyList<DiscordRole> RoleMentions { get; private set; }
+        public DiscordMessageApplication Application { get; private set; }
     }
 }

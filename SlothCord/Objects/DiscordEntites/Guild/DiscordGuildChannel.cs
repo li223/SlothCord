@@ -18,7 +18,7 @@ namespace SlothCord.Objects
         public async Task<DiscordMessage> PingB1nzyAsync()
             => await base.CreateMessageAsync(this.Id, "<&!80351110224678912>", false, null).ConfigureAwait(false);
 
-        public async Task<DiscordInvite> DeleteInviteAsync(string code)
+        public async Task<DiscordInvite?> DeleteInviteAsync(string code)
             => await base.DeleteDiscordInviteAsync(code).ConfigureAwait(false);
 
         public async Task<IReadOnlyList<DiscordInvite>> GetInvitesAsync()

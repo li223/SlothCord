@@ -55,6 +55,9 @@ namespace SlothCord.Objects
         public ulong OwnerId { get; private set; }
 
         [JsonIgnore]
+        public DiscordUser Owner { get; internal set; }
+
+        [JsonIgnore]
         public string Mention { get => $"<@#{this.Id}>"; }
     }
 }

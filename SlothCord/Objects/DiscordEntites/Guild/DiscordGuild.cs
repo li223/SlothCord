@@ -2,20 +2,19 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace SlothCord.Objects
 {
-    public sealed class DiscordGuild
+    public sealed class DiscordGuild : GuildMethods
     {
         public async Task<IReadOnlyList<DiscordInvite>> GetInvitesAsync()
             => await base.GetGuildInvitesAsync(this.Id).ConfigureAwait(false);
 
-        public async Task<GuildEmbed> GetEmbedAsync()
+        public async Task<GuildEmbed?> GetEmbedAsync()
             => await base.GetGuildEmbedAsync(this.Id);
 
-        public async Task<GuildEmbed> ModifyEmbedAsync(bool enabled = true, ulong channel_id = 0)
+        public async Task<GuildEmbed?> ModifyEmbedAsync(bool enabled = true, ulong channel_id = 0)
             => await base.ModifyGuildEmbedAsync(this.Id, enabled, channel_id);
 
         public async Task KickMemberAsync(DiscordGuildMember member)
@@ -33,7 +32,7 @@ namespace SlothCord.Objects
         public DiscordGuildMember GetMember(ulong id)
             => this.Members.FirstOrDefault(x => x.UserData.Id == id);
 
-        public DiscordChannel GetChannel(ulong id)
+        public DiscordGuildChannel GetChannel(ulong id)
             => this.Channels.FirstOrDefault(x => x.Id == id);
 
         public DiscordRole GetRole(ulong id)
@@ -80,86 +79,86 @@ namespace SlothCord.Objects
 
         [JsonIgnore]
         public DateTimeOffset CreatedAt { get; internal set; }
-        
+
         [JsonProperty("name")]
-        public string Name { get; }
+        public string Name { get; private set; }
 
         [JsonProperty("channels")]
-        public IReadOnlyList<DiscordGuildChannel> Channels { get; }
+        public IReadOnlyList<DiscordGuildChannel> Channels { get; private set; }
 
         [JsonProperty("large")]
-        public bool IsLarge { get; }
+        public bool IsLarge { get; private set; }
 
         [JsonProperty("voice_states")]
-        public IReadOnlyList<DiscordVoiceState> VoiceStates { get; }
+        public IReadOnlyList<DiscordVoiceState> VoiceStates { get; private set; }
 
         [JsonProperty("system_channel_id")]
-        public ulong? DefaultChannelId { get; } = 0;
+        public ulong? DefaultChannelId { get; private set; }
 
         [JsonProperty("id")]
-        public ulong Id { get; }
+        public ulong Id { get; private set; }
 
         [JsonProperty("application_id")]
-        public ulong? ApplicationId { get; }
+        public ulong? ApplicationId { get; private set; }
 
         [JsonProperty("icon")]
-        public string Icon { get; }
+        public string Icon { get; private set; }
 
         [JsonProperty("splash")]
-        public string SplashUrl { get; }
+        public string SplashUrl { get; private set; }
 
         [JsonProperty("OwnerId")]
-        public ulong? OwnerId { get; }
+        public ulong? OwnerId { get; private set; }
 
         [JsonProperty("region")]
-        public string Region { get; }
+        public string Region { get; private set; }
 
         [JsonProperty("afk_channel_id")]
-        public ulong? AfkChannelId { get; }
+        public ulong? AfkChannelId { get; private set; }
 
         [JsonProperty("afk_timeout")]
-        public int? AfkTimeout { get; }
+        public int? AfkTimeout { get; private set; }
 
         [JsonProperty("embed_enabled")]
-        public bool? EmbedsEnabled { get; }
+        public bool? EmbedsEnabled { get; private set; }
 
         [JsonProperty("embed_channel_id")]
-        public ulong? EmbedChannelId { get; }
+        public ulong? EmbedChannelId { get; private set; }
 
         [JsonProperty("verification_level")]
-        public VerificationLevel? VerificationLevel { get; }
+        public VerificationLevel? VerificationLevel { get; private set; }
 
         [JsonProperty("default_message_notifications")]
-        public NotificationLevel? DefaultMessageNotifications { get; }
+        public NotificationLevel? DefaultMessageNotifications { get; private set; }
 
         [JsonProperty("explicit_content_filter")]
-        public ExplicitContentFilterLevel? ExplicitContentFilter { get; }
+        public ExplicitContentFilterLevel? ExplicitContentFilter { get; private set; }
 
         [JsonProperty("mfa_level")]
-        public MFALevel? MfaLevel { get; }
+        public MFALevel? MfaLevel { get; private set; }
 
         [JsonProperty("widget_enabled")]
-        public bool? WidgetEnabled { get; }
+        public bool? WidgetEnabled { get; private set; }
 
         [JsonProperty("widget_channel_id")]
-        public ulong? WidgetChannelId { get; }
+        public ulong? WidgetChannelId { get; private set; }
 
         [JsonProperty("roles")]
-        public IReadOnlyList<DiscordRole> Roles { get; }
+        public IReadOnlyList<DiscordRole> Roles { get; private set; }
 
         [JsonProperty("emojis")]
-        public IReadOnlyList<DiscordEmoji> Emojis { get; }
+        public IReadOnlyList<DiscordEmoji> Emojis { get; private set; }
 
         [JsonProperty("features")]
-        public IReadOnlyList<string> Features { get; }
+        public IReadOnlyList<string> Features { get; private set; }
 
         [JsonProperty("presences")]
-        public IReadOnlyList<DiscordPresence> Presences { get; }
+        public IReadOnlyList<DiscordPresence> Presences { get; private set; }
 
         [JsonProperty("members")]
-        public IReadOnlyList<DiscordGuildMember> Members { get; }
+        public IReadOnlyList<DiscordGuildMember> Members { get; private set; }
 
         [JsonProperty("unavailable")]
-        public bool IsUnavailable { get; }
+        public bool IsUnavailable { get; private set; }
     }
 }

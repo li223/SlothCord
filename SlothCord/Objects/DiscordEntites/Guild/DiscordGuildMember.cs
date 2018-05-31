@@ -2,13 +2,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace SlothCord.Objects
 {
     public sealed class DiscordGuildMember : MemberMethods
     {
+        internal DiscordGuildMember(DiscordGuild guild)
+            => this.Roles = this.Guild.Roles.Where(x => this.RoleIds.Any(a => a == x.Id)) as IReadOnlyList<DiscordRole>;
+
         public async Task BanAsync(int clear_days = 7, string reason = null)
             => await this.Guild.BanMemberAsync(this.UserData.Id, clear_days, reason).ConfigureAwait(false);
 
@@ -22,16 +24,16 @@ namespace SlothCord.Objects
             if (is_muted == null) is_muted = this.IsMute;
             if (is_deaf == null) is_deaf = this.IsDeaf;
             if (channel_id == null) channel_id = this.ChannelId;
-            await base.ModifyAsync(this.GuildId, this.UserData.Id, nickname, roles, is_muted, is_deaf, channel_id).ConfigureAwait(false);
+            await base.ModifyAsync(this.Guild.Id, this.UserData.Id, nickname, roles, is_muted, is_deaf, channel_id).ConfigureAwait(false);
         }
 
         public async Task RemoveRoleAsync(ulong role_id)
         {
             var rollist = this.Roles.ToList();
-            var toremove = rollist.FirstOrDefault(x => x.Id == role_id);
+            var toremove = rollist?.FirstOrDefault(x => x.Id == role_id);
             if (toremove == null) return;
-            rollist.Remove(toremove);
-            await base.ModifyAsync(this.GuildId, this.UserData.Id, this.Nickname, rollist, this.IsMute, this.IsDeaf, this.ChannelId).ConfigureAwait(false);
+            rollist.Remove((DiscordRole)toremove);
+            await base.ModifyAsync(this.Guild.Id, this.UserData.Id, this.Nickname, rollist, this.IsMute, this.IsDeaf, this.ChannelId).ConfigureAwait(false);
         }
 
         public async Task GiveRoleAsync(ulong role_id)
@@ -39,17 +41,17 @@ namespace SlothCord.Objects
             var rolelist = this.Roles.ToList();
             var toadd = this.Guild.Roles?.FirstOrDefault(x => x.Id == role_id);
             if (toadd == null) return;
-            rolelist.Add(toadd);
-            await base.ModifyAsync(this.GuildId, this.UserData.Id, this.Nickname, rolelist, this.IsMute, this.IsDeaf, this.ChannelId).ConfigureAwait(false);
+            rolelist.Add((DiscordRole)toadd);
+            await base.ModifyAsync(this.Guild.Id, this.UserData.Id, this.Nickname, rolelist, this.IsMute, this.IsDeaf, this.ChannelId).ConfigureAwait(false);
         }
 
         public async Task RemoveRoleAsync(DiscordRole role)
         {
             var rolelist = this.Roles.ToList();
-            var toremove = rolelist.FirstOrDefault(x => x.Id == role.Id);
+            var toremove = rolelist?.FirstOrDefault(x => x.Id == role.Id);
             if (toremove == null) return;
-            rolelist.Remove(toremove);
-            await base.ModifyAsync(this.GuildId, this.UserData.Id, this.Nickname, rolelist, this.IsMute, this.IsDeaf, this.ChannelId).ConfigureAwait(false);
+            rolelist.Remove((DiscordRole)toremove);
+            await base.ModifyAsync(this.Guild.Id, this.UserData.Id, this.Nickname, rolelist, this.IsMute, this.IsDeaf, this.ChannelId).ConfigureAwait(false);
         }
 
         public async Task GiveRoleAsync(DiscordRole role)
@@ -57,8 +59,8 @@ namespace SlothCord.Objects
             var rolelist = this.Roles.ToList();
             var toadd = this.Guild.Roles?.FirstOrDefault(x => x.Id == role.Id);
             if (toadd == null) return;
-            rolelist.Add(toadd);
-            await base.ModifyAsync(this.GuildId, this.UserData.Id, this.Nickname, rolelist, this.IsMute, this.IsDeaf, this.ChannelId).ConfigureAwait(false);
+            rolelist.Add((DiscordRole)toadd);
+            await base.ModifyAsync(this.Guild.Id, this.UserData.Id, this.Nickname, rolelist, this.IsMute, this.IsDeaf, this.ChannelId).ConfigureAwait(false);
         }
 
         public async Task<DiscordMessage> SendMessageAsync(string content = null, DiscordEmbed embed = null)
@@ -92,13 +94,13 @@ namespace SlothCord.Objects
         internal IReadOnlyList<ulong> RoleIds { get; set; }
 
         [JsonIgnore]
+        public IReadOnlyList<DiscordRole> Roles { get; internal set; }
+
+        [JsonIgnore]
         public DiscordGuild Guild { get; internal set; }
 
         [JsonIgnore]
         public ulong? ChannelId { get; internal set; }
-
-        [JsonIgnore]
-        public IReadOnlyList<DiscordRole> Roles { get; internal set; }
 
         [JsonIgnore]
         public string Mention { get => $"<@{this.UserData.Id}>"; }
