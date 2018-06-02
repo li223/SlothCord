@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
 using WebSocket4Net;
@@ -75,7 +74,7 @@ namespace SlothCord
         /// </summary>
         public DiscordApplication CurrentApplication { get; internal set; }
 
-        public IReadOnlyList<DiscordGuild> Guilds { get; internal set; }
+        public IEnumerable<DiscordGuild> Guilds { get; internal set; }
 
         private List<DiscordGuild> _internalGuilds { get; set; }
 
@@ -188,7 +187,7 @@ namespace SlothCord
                     {
                         var ready = JsonConvert.DeserializeObject<ReadyPayload>(payload);
                         _sessionId = ready.SessionId;
-                        _guildsToDownload = ready.Guilds.Count;
+                        _guildsToDownload = ready.Guilds.Count();
                         break;
                     }
                 case DispatchType.GuildCreate:

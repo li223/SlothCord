@@ -14,7 +14,7 @@ namespace SlothCord.Objects
         public string Name { get; private set; }
 
         [JsonProperty("roles")]
-        public IReadOnlyList<DiscordGuildRole> Roles { get; private set; }
+        public IEnumerable<DiscordGuildRole> Roles { get; private set; }
 
         [JsonProperty("user")]
         public DiscordUser Creator { get; private set; }

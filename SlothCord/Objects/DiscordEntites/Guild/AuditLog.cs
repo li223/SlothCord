@@ -9,13 +9,13 @@ namespace SlothCord.Objects
     public struct GuildAuditLogData
     {
         [JsonProperty("webhooks")]
-        public IReadOnlyList<Webhook> Webhooks { get; private set; }
+        public IEnumerable<Webhook> Webhooks { get; private set; }
 
         [JsonProperty("users")]
-        public IReadOnlyList<DiscordUser> Users { get; private set; }
+        public IEnumerable<DiscordUser> Users { get; private set; }
 
         [JsonProperty("audit_log_entries")]
-        public IReadOnlyList<AuditEntryObject> Entries { get; private set; }
+        public IEnumerable<AuditEntryObject> Entries { get; private set; }
     }
 
     public struct AuditEntryObject
@@ -37,7 +37,7 @@ namespace SlothCord.Objects
         public ulong TargetType { get; private set; }
 
         [JsonProperty("changes", NullValueHandling = NullValueHandling.Ignore)]
-        public IReadOnlyList<AuditChange> Changes { get; private set; }
+        public IEnumerable<AuditChange> Changes { get; private set; }
 
         [JsonProperty("user_id")]
         public ulong UserResponsibleId { get; private set; }
@@ -131,10 +131,10 @@ namespace SlothCord.Objects
         public string VanityUrlCode { get; private set; }
 
         [JsonProperty("$add")]
-        public IReadOnlyList<DiscordGuildRole> RolesAdded { get; private set; }
+        public IEnumerable<DiscordGuildRole> RolesAdded { get; private set; }
 
         [JsonProperty("$remove")]
-        public IReadOnlyList<DiscordGuildRole> RolesRemoved { get; private set; }
+        public IEnumerable<DiscordGuildRole> RolesRemoved { get; private set; }
 
         [JsonProperty("prune_delete_days")]
         public int? PruneDeleteDays { get; private set; }
@@ -155,7 +155,7 @@ namespace SlothCord.Objects
         public int? Bitrate { get; private set; }
         
         [JsonProperty("permission_overwrites")]
-        public IReadOnlyList<GuildChannelOverwrite> ChannelOverwrites { get; private set; }
+        public IEnumerable<GuildChannelOverwrite> ChannelOverwrites { get; private set; }
 
         [JsonProperty("nsfw")]
         public bool? Nsfw { get; private set; }

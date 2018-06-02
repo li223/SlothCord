@@ -27,7 +27,7 @@ namespace SlothCord.Objects
         public async Task<DiscordMessage> GetMessageAsync(ulong id)
             => await base.GetSingleMessageAsync(this.Id, id).ConfigureAwait(false);
 
-        public async Task<IReadOnlyList<DiscordMessage>> GetMessagesAsync(int limit = 50, ulong? around = null, ulong? after = null, ulong? before = null)
+        public async Task<IEnumerable<DiscordMessage>> GetMessagesAsync(int limit = 50, ulong? around = null, ulong? after = null, ulong? before = null)
             => await base.GetMultipleMessagesAsync(this.Id, limit, around, after, before).ConfigureAwait(false);
 
         [JsonProperty("id")]
@@ -49,7 +49,7 @@ namespace SlothCord.Objects
         public string Icon { get; private set; }
 
         [JsonProperty("recipients")]
-        public IReadOnlyList<DiscordUser> Recipients { get; private set; }
+        public IEnumerable<DiscordUser> Recipients { get; private set; }
 
         [JsonProperty("owner_id")]
         public ulong OwnerId { get; private set; }

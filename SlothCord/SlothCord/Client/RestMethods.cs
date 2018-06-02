@@ -65,7 +65,7 @@ namespace SlothCord
 
     public class MemberMethods : ApiBase
     {
-        internal async Task ModifyAsync(ulong guild_id, ulong member_id, string nickname, IReadOnlyList<DiscordGuildRole> roles, bool? is_muted, bool? is_deaf, ulong? channel_id)
+        internal async Task ModifyAsync(ulong guild_id, ulong member_id, string nickname, IEnumerable<DiscordGuildRole> roles, bool? is_muted, bool? is_deaf, ulong? channel_id)
         {
             var jsondata = JsonConvert.SerializeObject(new MemberModifyPayload()
             {
@@ -145,7 +145,7 @@ namespace SlothCord
             else return null;
         }
 
-        internal async Task<IReadOnlyList<DiscordGuildInvite>> GetChannelInvitesAsync(ulong channel_id)
+        internal async Task<IEnumerable<DiscordGuildInvite>> GetChannelInvitesAsync(ulong channel_id)
         {
             var query = $"{_baseAddress}/channels/{channel_id}/invites";
             var msg = new HttpRequestMessage(HttpMethod.Get, new Uri(query));
@@ -153,13 +153,13 @@ namespace SlothCord
             var content = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
             {
-                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) { return JsonConvert.DeserializeObject<IReadOnlyList<DiscordGuildInvite>>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg)); }
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) { return JsonConvert.DeserializeObject<IEnumerable<DiscordGuildInvite>>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg)); }
                 else return null;
             }
-            else return JsonConvert.DeserializeObject<IReadOnlyList<DiscordGuildInvite>>(content);
+            else return JsonConvert.DeserializeObject<IEnumerable<DiscordGuildInvite>>(content);
         }
 
-        internal async Task BulkDeleteGuildMessagesAsync(ulong? guild_id, ulong channel_id, IReadOnlyList<ulong> message_ids)
+        internal async Task BulkDeleteGuildMessagesAsync(ulong? guild_id, ulong channel_id, IEnumerable<ulong> message_ids)
         {
             if (guild_id == null) return;
             var ids = new BulkDeletePayload()
@@ -180,7 +180,7 @@ namespace SlothCord
 
         }
 
-        internal async Task<IReadOnlyList<DiscordMessage>> GetMultipleMessagesAsync(ulong channel_id, int limit = 100, ulong? around = null, ulong? after = null, ulong? before = null)
+        internal async Task<IEnumerable<DiscordMessage>> GetMultipleMessagesAsync(ulong channel_id, int limit = 100, ulong? around = null, ulong? after = null, ulong? before = null)
         {
             var requeststring = $"{_baseAddress}/channels/{channel_id}/messages?limit={limit}";
 
@@ -193,7 +193,7 @@ namespace SlothCord
 
             var response = await _httpClient.GetAsync(new Uri(requeststring)).ConfigureAwait(false);
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<IReadOnlyList<DiscordMessage>>(content);
+            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<IEnumerable<DiscordMessage>>(content);
             else return null;
         }
 
@@ -242,7 +242,7 @@ namespace SlothCord
 
         }
 
-        internal async Task<DiscordChannel> ModifyGuildChannelAsync(ulong channel_id, string name = null, int? position = null, string topic = null, bool? nsfw = null, int? bitrate = null, int? user_limit = null, IReadOnlyList<GuildChannelOverwrite> permission_overwrites = null, ulong? parent_id = null)
+        internal async Task<DiscordChannel> ModifyGuildChannelAsync(ulong channel_id, string name = null, int? position = null, string topic = null, bool? nsfw = null, int? bitrate = null, int? user_limit = null, IEnumerable<GuildChannelOverwrite> permission_overwrites = null, ulong? parent_id = null)
         {
             var msg = new HttpRequestMessage(new HttpMethod("PATCH"), new Uri($"{_baseAddress}/channels/{channel_id}"))
             {
@@ -269,16 +269,16 @@ namespace SlothCord
 
     public class GuildMethods : ApiBase
     {
-        internal async Task<IReadOnlyList<DiscordGuildInvite>> GetGuildInvitesAsync(ulong guild_id)
+        internal async Task<IEnumerable<DiscordGuildInvite>> GetGuildInvitesAsync(ulong guild_id)
         {
             var query = $"{_baseAddress}/guilds/{guild_id}/invites";
             var msg = new HttpRequestMessage(HttpMethod.Get, new Uri(query));
             var response = await _httpClient.SendAsync(msg);
             var content = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
-                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) { return JsonConvert.DeserializeObject<IReadOnlyList<DiscordGuildInvite>>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg)); }
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString())) { return JsonConvert.DeserializeObject<IEnumerable<DiscordGuildInvite>>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg)); }
                 else { return null; }
-            else return JsonConvert.DeserializeObject<IReadOnlyList<DiscordGuildInvite>>(content);
+            else return JsonConvert.DeserializeObject<IEnumerable<DiscordGuildInvite>>(content);
         }
 
         internal async Task<GuildEmbed?> ModifyGuildEmbedAsync(ulong guild_id, bool enabled, ulong channel_id)
@@ -361,7 +361,7 @@ namespace SlothCord
                     await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), request).ConfigureAwait(false);
         }
 
-        internal async Task<IReadOnlyList<DiscordGuildMember>> ListGuildMembersAsync(ulong guild_id, int limit = 100, ulong? around = null)
+        internal async Task<IEnumerable<DiscordGuildMember>> ListGuildMembersAsync(ulong guild_id, int limit = 100, ulong? around = null)
         {
             var requeststring = $"{_baseAddress}/guilds/{guild_id}/members?limit={limit}";
             if (around != null)
@@ -372,12 +372,12 @@ namespace SlothCord
             if (response.IsSuccessStatusCode)
             {
                 var members = JsonConvert.DeserializeObject<List<DiscordGuildMember>>(content);
-                return members as IReadOnlyList<DiscordGuildMember>;
+                return members as IEnumerable<DiscordGuildMember>;
             }
             else
             {
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
-                    return JsonConvert.DeserializeObject<IReadOnlyList<DiscordGuildMember>>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg).ConfigureAwait(false));
+                    return JsonConvert.DeserializeObject<IEnumerable<DiscordGuildMember>>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg).ConfigureAwait(false));
                 else return null;
             }
         }

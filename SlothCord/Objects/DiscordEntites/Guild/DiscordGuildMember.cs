@@ -10,7 +10,7 @@ namespace SlothCord.Objects
     public sealed class DiscordGuildMember : MemberMethods
     {
         internal DiscordGuildMember(DiscordGuild guild)
-            => this.Roles = this.Guild.Roles.Where(x => this.RoleIds.Any(a => a == x.Id)) as IReadOnlyList<DiscordGuildRole>;
+            => this.Roles = this.Guild.Roles.Where(x => this.RoleIds.Any(a => a == x.Id)) as IEnumerable<DiscordGuildRole>;
 
         public async Task BanAsync(int clear_days = 7, string reason = null)
             => await this.Guild.BanMemberAsync(this.UserData.Id, clear_days, reason).ConfigureAwait(false);
@@ -18,10 +18,10 @@ namespace SlothCord.Objects
         public async Task KickAsync()
             => await this.Guild.KickMemberAsync(this.UserData.Id).ConfigureAwait(false);
 
-        public async Task ModifyAsync(string nickname, IReadOnlyList<DiscordGuildRole> roles, bool? is_muted, bool? is_deaf, ulong? channel_id)
+        public async Task ModifyAsync(string nickname, IEnumerable<DiscordGuildRole> roles, bool? is_muted, bool? is_deaf, ulong? channel_id)
         {
             if (string.IsNullOrWhiteSpace(nickname)) nickname = this.Nickname;
-            if (roles == null) roles = this.Roles as IReadOnlyList<DiscordGuildRole>;
+            if (roles == null) roles = this.Roles as IEnumerable<DiscordGuildRole>;
             if (is_muted == null) is_muted = this.IsMute;
             if (is_deaf == null) is_deaf = this.IsDeaf;
             if (channel_id == null) channel_id = this.ChannelId;
@@ -92,10 +92,10 @@ namespace SlothCord.Objects
         public DateTime JoinedAt { get; private set; }
 
         [JsonProperty("roles")]
-        internal IReadOnlyList<ulong> RoleIds { get; set; }
+        internal IEnumerable<ulong> RoleIds { get; set; }
 
         [JsonIgnore]
-        public IReadOnlyList<DiscordGuildRole> Roles { get; internal set; }
+        public IEnumerable<DiscordGuildRole> Roles { get; internal set; }
 
         [JsonIgnore]
         public DiscordGuild Guild { get; internal set; }

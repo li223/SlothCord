@@ -8,7 +8,7 @@ namespace SlothCord.Objects
 {
     public sealed class DiscordGuild : GuildMethods
     {
-        public async Task<IReadOnlyList<DiscordGuildInvite>> GetInvitesAsync()
+        public async Task<IEnumerable<DiscordGuildInvite>> GetInvitesAsync()
             => await base.GetGuildInvitesAsync(this.Id).ConfigureAwait(false);
 
         public async Task<GuildEmbed?> GetEmbedAsync()
@@ -54,7 +54,7 @@ namespace SlothCord.Objects
             return member;
         }
 
-        public async Task<IReadOnlyList<DiscordGuildMember>> GetMembersAsync(int limit = 100, ulong? around = null)
+        public async Task<IEnumerable<DiscordGuildMember>> GetMembersAsync(int limit = 100, ulong? around = null)
         {
             var members = await base.ListGuildMembersAsync(this.Id, limit, around).ConfigureAwait(false);
             foreach (var member in members)
@@ -84,13 +84,13 @@ namespace SlothCord.Objects
         public string Name { get; private set; }
 
         [JsonProperty("channels")]
-        public IReadOnlyList<DiscordGuildChannel> Channels { get; private set; }
+        public IEnumerable<DiscordGuildChannel> Channels { get; private set; }
 
         [JsonProperty("large")]
         public bool IsLarge { get; private set; }
 
         [JsonProperty("voice_states")]
-        public IReadOnlyList<UserVoiceState> VoiceStates { get; private set; }
+        public IEnumerable<UserVoiceState> VoiceStates { get; private set; }
 
         [JsonProperty("system_channel_id")]
         public ulong? DefaultChannelId { get; private set; }
@@ -144,19 +144,19 @@ namespace SlothCord.Objects
         public ulong? WidgetChannelId { get; private set; }
 
         [JsonProperty("roles")]
-        public IReadOnlyList<DiscordGuildRole> Roles { get; private set; }
+        public IEnumerable<DiscordGuildRole> Roles { get; private set; }
 
         [JsonProperty("emojis")]
-        public IReadOnlyList<DiscordGuildEmoji> Emojis { get; private set; }
+        public IEnumerable<DiscordGuildEmoji> Emojis { get; private set; }
 
         [JsonProperty("features")]
-        public IReadOnlyList<string> Features { get; private set; }
+        public IEnumerable<string> Features { get; private set; }
 
         [JsonProperty("presences")]
-        public IReadOnlyList<DiscordPresence> Presences { get; private set; }
+        public IEnumerable<DiscordPresence> Presences { get; private set; }
 
         [JsonProperty("members")]
-        public IReadOnlyList<DiscordGuildMember> Members { get; private set; }
+        public IEnumerable<DiscordGuildMember> Members { get; private set; }
 
         [JsonProperty("unavailable")]
         public bool IsUnavailable { get; private set; }

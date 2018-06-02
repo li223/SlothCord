@@ -40,10 +40,10 @@ namespace SlothCord.Objects
         public string[] Relationships { get; set; }
 
         [JsonProperty("private_channnels")]
-        public IReadOnlyList<DiscordChannel> PrivateChannels { get; set; }
+        public IEnumerable<DiscordChannel> PrivateChannels { get; set; }
 
         [JsonProperty("guilds")]
-        public IReadOnlyList<DiscordGuild> Guilds { get; set; }
+        public IEnumerable<DiscordGuild> Guilds { get; set; }
 
         [JsonProperty("_trace")]
         public string[] Trace { get; set; }
@@ -99,7 +99,7 @@ namespace SlothCord.Objects
         public StatusType Status { get; set; }
 
         [JsonProperty("roles")]
-        public IReadOnlyList<ulong> RoleIds { get; set; }
+        public IEnumerable<ulong> RoleIds { get; set; }
 
         [JsonProperty("nick")]
         public string Nickname { get; set; }
@@ -129,7 +129,7 @@ namespace SlothCord.Objects
         public int HeartbeatInterval { get; set; }
 
         [JsonProperty("_trace")]
-        public IReadOnlyList<string> Trace { get; set; }
+        public IEnumerable<string> Trace { get; set; }
     }
 
     internal class Properties

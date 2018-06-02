@@ -44,16 +44,16 @@ namespace SlothCord.Objects
         public bool MentionsEveryone { get; private set; }
 
         [JsonProperty("mentions")]
-        public IReadOnlyList<DiscordUser> UserMentions { get; private set; }
+        public IEnumerable<DiscordUser> UserMentions { get; private set; }
 
         [JsonProperty("attachments")]
-        public IReadOnlyList<DiscordAttachment> Attachments { get; private set; }
+        public IEnumerable<DiscordAttachment> Attachments { get; private set; }
 
         [JsonProperty("embeds")]
-        public IReadOnlyList<DiscordEmbed> Embeds { get; private set; }
+        public IEnumerable<DiscordEmbed> Embeds { get; private set; }
 
         [JsonProperty("reactions")]
-        public IReadOnlyList<DiscordGuildEmoji> Reactions { get; private set; }
+        public IEnumerable<DiscordGuildEmoji> Reactions { get; private set; }
 
         [JsonProperty("nonce")]
         public ulong? Nonce { get; private set; }

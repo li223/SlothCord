@@ -8,20 +8,20 @@ namespace SlothCord.Objects
     {
         public DiscordGuildMessage(DiscordGuild guild)
         {
-            this.MemberMentions = guild.Members.Where(x => MentionRoleIds.Any(a => a == x.UserData.Id)) as IReadOnlyList<DiscordGuildMember>;
+            this.MemberMentions = guild.Members.Where(x => MentionRoleIds.Any(a => a == x.UserData.Id)) as IEnumerable<DiscordGuildMember>;
         }
 
         [JsonProperty("webhook_id")]
         public ulong? WebhookId { get; private set; }
 
         [JsonProperty("mention_roles")]
-        public IReadOnlyList<ulong> MentionRoleIds { get; private set; }
+        public IEnumerable<ulong> MentionRoleIds { get; private set; }
 
         [JsonIgnore]
-        public IReadOnlyList<DiscordGuildMember> MemberMentions { get; private set; }
+        public IEnumerable<DiscordGuildMember> MemberMentions { get; private set; }
 
         [JsonIgnore]
-        public IReadOnlyList<DiscordGuildRole> RoleMentions { get; private set; }
+        public IEnumerable<DiscordGuildRole> RoleMentions { get; private set; }
 
         [JsonIgnore]
         public DiscordGuildMember MemberAuthor { get; internal set; }

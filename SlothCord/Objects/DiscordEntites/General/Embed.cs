@@ -121,7 +121,7 @@ namespace SlothCord.Objects
         public EmbedAuthor Author { get; set; }
 
         [JsonProperty("fields", NullValueHandling = NullValueHandling.Ignore)]
-        public IReadOnlyList<EmbedField> Fields { get => this.PrivateEmbedFields; private set { this.Fields = PrivateEmbedFields; } }
+        public IEnumerable<EmbedField> Fields { get => this.PrivateEmbedFields; private set { this.Fields = PrivateEmbedFields; } }
 
         [JsonIgnore]
         private List<EmbedField> PrivateEmbedFields = new List<EmbedField>();

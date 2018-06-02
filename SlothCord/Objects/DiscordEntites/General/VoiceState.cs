@@ -7,7 +7,7 @@ namespace SlothCord.Objects
         [JsonProperty("guild_id")]
         public ulong? GuildId { get; private set; }
         
-        [JsonIgore]
+        [JsonIgnore]
         public DiscordGuild Guild { get; internal set; }
 
         [JsonProperty("channel_id")]

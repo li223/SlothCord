@@ -89,7 +89,7 @@ namespace SlothCord.Objects
         public string Id { get; private set; }
 
         [JsonProperty("size")]
-        public IReadOnlyList<int> Size { get; private set; }
+        public IEnumerable<int> Size { get; private set; }
     }
 
     public struct ActivityTimestamps
