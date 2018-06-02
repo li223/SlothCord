@@ -12,9 +12,8 @@ namespace SlothCord.Objects
         private static DispatchType _prevType { get; set; }
         private static DateTimeOffset _lastRequestStamp { get; set; }
 
-        public static async Task<string> SendRequestAsync(this HttpClient http, ApiBase apibase, HttpRequestMessage msg, DispatchType type, object postedto = null)
+        public static async Task<string> SendRequestAsync(this HttpClient http, ApiBase apibase, HttpRequestMessage msg, DispatchType type)
         {
-
             switch (type)
             {
                 case DispatchType.MessageCreate:
@@ -32,8 +31,33 @@ namespace SlothCord.Objects
                             _lastRequestStamp = DateTime.Now;
                             _ratelimit = 5;
                         }
-                        if (_ratelimit == -1 && timediff.Seconds < 5)
+                        if (_ratelimit <= -1 && timediff.Seconds <= 5)
                             content = await apibase.RetryAsync(5000, msg).ConfigureAwait(false);
+                        else
+                        {
+                            var response = await http.SendAsync(msg).ConfigureAwait(false);
+                            content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            return content;
+                        }
+                        return content;
+                    }
+                case DispatchType.MessageDelete:
+                    {
+                        string content;
+                        if (_prevType != DispatchType.MessageDelete)
+                        {
+                            _prevType = DispatchType.MessageDelete;
+                            _ratelimit = 5;
+                        }
+                        else _ratelimit -= 1;
+                        var timediff = DateTimeOffset.Now - _lastRequestStamp;
+                        if (timediff.Seconds > 1)
+                        {
+                            _lastRequestStamp = DateTime.Now;
+                            _ratelimit = 5;
+                        }
+                        if (_ratelimit <= -1 && timediff.Seconds <= 1)
+                            content = await apibase.RetryAsync(1000, msg).ConfigureAwait(false);
                         else
                         {
                             var response = await http.SendAsync(msg).ConfigureAwait(false);
@@ -45,18 +69,5 @@ namespace SlothCord.Objects
                 default: return "";
             }
         }
-    }
-
-    internal struct RateLimits
-    {
-        const int MessageCreate = 5;
-    }
-
-    internal struct Ratelimit
-    {
-        public string PerType { get; set; }
-        public HttpMethod MethodType { get; set; }
-        public string EndpointName { get; set; }
-        public KeyValuePair<int, int> Rate { get; set; }
     }
 }

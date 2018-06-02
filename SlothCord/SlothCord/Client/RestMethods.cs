@@ -416,7 +416,7 @@ namespace SlothCord
             }
         }
 
-        internal async Task<AuditLogData> ListAuditLogsAsync(ulong guild_id, ulong? user_id = null, AuditActionType? action_type = null, ulong? before = null, int? limit = null)
+        internal async Task<GuildAuditLogData?> ListAuditLogsAsync(ulong guild_id, ulong? user_id = null, AuditActionType? action_type = null, ulong? before = null, int? limit = null)
         {
             #region kms.jpg
             bool addextra = false;
@@ -454,11 +454,11 @@ namespace SlothCord
             var msg = new HttpRequestMessage(HttpMethod.Get, new Uri(query));
             var response = await _httpClient.SendAsync(msg);
             var content = await response.Content.ReadAsStringAsync();
-            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<AuditLogData>(content);
+            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<GuildAuditLogData>(content);
             else
             {
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
-                    return JsonConvert.DeserializeObject<AuditLogData>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg).ConfigureAwait(false));
+                    return JsonConvert.DeserializeObject<GuildAuditLogData>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg).ConfigureAwait(false));
                 else return null;
             }
         }

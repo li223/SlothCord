@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -103,7 +104,7 @@ namespace SlothCord.Objects
         public ulong? ChannelId { get; internal set; }
 
         [JsonIgnore]
-        public string Mention { get => $"<@{this.UserData.Id}>"; }
+        public string Mention { get => $"<@!{this.UserData.Id}>"; }
 
     }
 }

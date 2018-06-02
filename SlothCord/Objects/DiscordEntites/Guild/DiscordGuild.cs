@@ -38,7 +38,7 @@ namespace SlothCord.Objects
         public DiscordRole GetRole(ulong id)
             => this.Roles.FirstOrDefault(x => x.Id == id);
 
-        public async Task<AuditLogData> GetAuditLogsAsync(ulong? user_id = null, AuditActionType? action_type = null, ulong? before = null, int? limit = null)
+        public async Task<GuildAuditLogData> GetAuditLogsAsync(ulong? user_id = null, AuditActionType? action_type = null, ulong? before = null, int? limit = null)
             => await base.ListAuditLogsAsync(this.Id, user_id, action_type, before, limit).ConfigureAwait(false);
 
         public async Task LeaveAsync()
