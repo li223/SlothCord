@@ -77,7 +77,7 @@ namespace SlothCord
 
         public IReadOnlyList<DiscordGuild> Guilds { get; internal set; }
 
-        private List<DiscordGuild> InternalGuilds { get; set; }
+        private List<DiscordGuild> _internalGuilds { get; set; }
 
         private bool _heartbeat = true;
 
@@ -85,9 +85,9 @@ namespace SlothCord
 
         private int? _sequence = null;
 
-        private int GuildsToDownload = 0;
+        private int _guildsToDownload = 0;
 
-        private int DownloadedGuilds = 0;
+        private int _downloadedGuilds = 0;
 
         public async Task ConnectAsync()
         {
@@ -151,7 +151,7 @@ namespace SlothCord
                         var hello = JsonConvert.DeserializeObject<GatewayHello>(data.EventPayload);
                         if (_sessionId == "")
                         {
-                            //Send Identify
+                            await SendIdentifyAsync().ConfigureAwait(false);
                             await HeartbeatLoop(hello.HeartbeatInterval).ConfigureAwait(false);
                         }
                         else { /*resume*/ }
@@ -188,15 +188,15 @@ namespace SlothCord
                     {
                         var ready = JsonConvert.DeserializeObject<ReadyPayload>(payload);
                         _sessionId = ready.SessionId;
-                        GuildsToDownload = ready.Guilds.Count;
+                        _guildsToDownload = ready.Guilds.Count;
                         break;
                     }
                 case DispatchType.GuildCreate:
                     {
                         //Guild Create Event
                         var guild = JsonConvert.DeserializeObject<DiscordGuild>(payload);
-                        this.InternalGuilds.Add(guild);
-                        if (this.GuildsToDownload > this.DownloadedGuilds)
+                        this._internalGuilds.Add(guild);
+                        if (this._guildsToDownload > this._downloadedGuilds)
                         {
                             //GuildsDownloaded Event
                         }

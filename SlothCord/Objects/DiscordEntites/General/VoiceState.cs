@@ -40,4 +40,25 @@ namespace SlothCord.Objects
         [JsonProperty("suppress")]
         public bool IsSuppressed { get; private set; }
     }
+
+    public struct VoiceRegion
+    {
+        [JsonProperty("id")]
+        public string Id { get; private set; }
+
+        [JsonProperty("name")]
+        public string Name { get; private set; }
+
+        [JsonProperty("vip")]
+        public bool IsVipOnly { get; private set; }
+
+        [JsonProperty("optimal")]
+        public bool IsOptimal { get; private set; }
+
+        [JsonProperty("deprecated")]
+        public bool IsDeprecated { get; private set; }
+
+        [JsonProperty("custom")]
+        public bool IsCustom { get; private set; }
+    }
 }
