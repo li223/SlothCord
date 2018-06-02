@@ -19,6 +19,18 @@ namespace SlothCord.Objects
         public string EventPayload { get; set; }
     }
 
+    internal struct GatewayClose
+    {
+        [JsonProperty("t", NullValueHandling = NullValueHandling.Ignore)]
+        public string EventName { get; set; }
+        
+        [JsonProperty("op")]
+        public CloseCode Code { get; set; }
+
+        [JsonProperty("d")]
+        public string Payload { get; set; }
+    }
+
     internal struct ReadyPayload
     {
         [JsonProperty("v")]

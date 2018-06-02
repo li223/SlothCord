@@ -14,6 +14,20 @@ namespace SlothCord
 {
     public sealed class DiscordClient : ApiBase
     {
+        public event Heartbeated Heartbeated;
+        public event SocketOpened SocketOpened;
+        public event SocketClosed SocketClosed;
+        public event GuildsDownloaded GuildsDownloaded;
+        public event GuildCreated GuildCreated;
+
+        private List<DiscordGuild> _internalGuilds { get; set; }
+        private bool _heartbeat = true;
+        private int _heartbeatInterval = 0;
+        private string _sessionId = "";
+        private int? _sequence = null;
+        private int _guildsToDownload = 0;
+        private int _downloadedGuilds = 0;
+
         /// <summary>
         /// Your bot token
         /// </summary>
@@ -76,18 +90,6 @@ namespace SlothCord
 
         public IEnumerable<DiscordGuild> Guilds { get; internal set; }
 
-        private List<DiscordGuild> _internalGuilds { get; set; }
-
-        private bool _heartbeat = true;
-
-        private string _sessionId = "";
-
-        private int? _sequence = null;
-
-        private int _guildsToDownload = 0;
-
-        private int _downloadedGuilds = 0;
-
         public async Task ConnectAsync()
         {
             if (string.IsNullOrWhiteSpace(this.Token)) throw new ArgumentNullException("You must supply a valid token");
@@ -102,11 +104,52 @@ namespace SlothCord
             var url = data["url"].ToString();
             WebSocketClient = new WebSocket(url);
             WebSocketClient.MessageReceived += WebSocketClient_MessageReceived;
+            WebSocketClient.Opened += WebSocketClient_Opened;
+            WebSocketClient.Closed += WebSocketClient_Closed;
 #if NETCORE
             await WebSocketClient.OpenAsync().ConfigureAwait(false);
 #else
             WebSocketClient.Open();
 #endif
+        }
+
+        private async void WebSocketClient_Closed(object sender, EventArgs e)
+        {
+            _heartbeat = false;
+            var data = JsonConvert.DeserializeObject<GatewayClose>(e.ToString());
+            this.SocketClosed?.Invoke(this, $"Received Close Code: {data.Code}").ConfigureAwait(false);
+            if(data.Code == CloseCode.GracefulClose)
+            {
+                _sessionId = "";
+                _sequence = null;
+            }
+            else
+            {
+#if NETCORE
+                await WebSocketClient.OpenAsync().ConfigureAwait(false);
+#else
+                WebSocketClient.Open();
+#endif
+            }
+        }
+
+        private void WebSocketClient_Opened(object sender, EventArgs e) => this.SocketOpened?.Invoke(this).ConfigureAwait(false);
+
+        private async Task SendResumeAsync()
+        {
+            var pldata = JsonConvert.SerializeObject(new ResumePayload()
+            {
+                SessionId = this._sessionId,
+                Token = this.Token
+            });
+            var Content = JsonConvert.SerializeObject(new GatewayEvent()
+            {
+                Code = OPCode.Resume,
+                EventPayload = pldata
+            });
+            var payload = JsonConvert.SerializeObject(Content);
+            WebSocketClient.Send(payload);
+            await HeartbeatLoop(this._heartbeatInterval).ConfigureAwait(false);
         }
 
         private Task SendIdentifyAsync()
@@ -131,7 +174,7 @@ namespace SlothCord
 
         public async Task HeartbeatLoop(int inter)
         {
-            while(_heartbeat)
+            while (_heartbeat)
             {
                 await Task.Delay(inter).ConfigureAwait(false);
                 if (WebSocketClient.State == WebSocketState.Open) WebSocketClient.Send(@"{""op"":1, ""t"":null,""d"":null,""s"":null}");
@@ -143,7 +186,7 @@ namespace SlothCord
         {
             var data = JsonConvert.DeserializeObject<GatewayEvent>(e.Message);
             _sequence = data.Sequence;
-            switch(data.Code)
+            switch (data.Code)
             {
                 case OPCode.Hello:
                     {
@@ -152,23 +195,20 @@ namespace SlothCord
                         {
                             await SendIdentifyAsync().ConfigureAwait(false);
                             await HeartbeatLoop(hello.HeartbeatInterval).ConfigureAwait(false);
+                            this._heartbeatInterval = hello.HeartbeatInterval;
                         }
                         else { /*resume*/ }
                         break;
                     }
                 case OPCode.HeartbeatAck:
                     {
-                        //Heartbeat Ack Event
+                        this.Heartbeated?.Invoke(this).ConfigureAwait(false);
                         break;
                     }
                 case OPCode.Dispatch:
                     {
                         var type = Enum.TryParse(data.EventName, out DispatchType res);
                         await HandleDispatchEventAsync(res, data.EventPayload).ConfigureAwait(false);
-                        break;
-                    }
-                case OPCode.StatusUpdate:
-                    {
                         break;
                     }
                 default:
@@ -178,10 +218,10 @@ namespace SlothCord
                     }
             }
         }
-        
-        private async Task HandleDispatchEventAsync(DispatchType code, string payload)
+
+        private Task HandleDispatchEventAsync(DispatchType code, string payload)
         {
-            switch(code)
+            switch (code)
             {
                 case DispatchType.Ready:
                     {
@@ -192,13 +232,14 @@ namespace SlothCord
                     }
                 case DispatchType.GuildCreate:
                     {
-                        //Guild Create Event
                         var guild = JsonConvert.DeserializeObject<DiscordGuild>(payload);
+                        this.GuildCreated?.Invoke(this, guild).ConfigureAwait(false);
                         this._internalGuilds.Add(guild);
                         if (this._guildsToDownload > this._downloadedGuilds)
                         {
-                            //GuildsDownloaded Event
-                        }
+                            this.Guilds = this._internalGuilds;
+                            this.GuildsDownloaded?.Invoke(this, this.Guilds);
+                        }  
                         break;
                     }
                 case DispatchType.MessageCreate:
@@ -215,6 +256,7 @@ namespace SlothCord
                         break;
                     }
             }
+            return Task.CompletedTask;
         }
     }
 }

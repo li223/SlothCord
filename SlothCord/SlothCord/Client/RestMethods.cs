@@ -27,6 +27,7 @@ namespace SlothCord
             {
                 Content = new StringContent(JsonConvert.SerializeObject(obj))
             };
+
             var response = await _httpClient.SendAsync(msg).ConfigureAwait(false);
             var rescont = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordMessage>(rescont);
