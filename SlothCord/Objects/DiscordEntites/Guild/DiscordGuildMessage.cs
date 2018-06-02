@@ -21,7 +21,7 @@ namespace SlothCord.Objects
         public IReadOnlyList<DiscordGuildMember> MemberMentions { get; private set; }
 
         [JsonIgnore]
-        public IReadOnlyList<DiscordRole> RoleMentions { get; private set; }
+        public IReadOnlyList<DiscordGuildRole> RoleMentions { get; private set; }
 
         [JsonIgnore]
         public DiscordGuildMember MemberAuthor { get; internal set; }

@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SlothCord.CommandService;
 using SlothCord.Objects;
 using System;
 using System.Collections.Generic;
@@ -62,7 +63,7 @@ namespace SlothCord
         /// <summary>
         /// Command service used for bot commands
         /// </summary>
-        public CommandService Commands { get; set; }
+        public CommandsProvider CommandsProvider { get; set; }
 
         /// <summary>
         /// The current client as a user
@@ -148,7 +149,11 @@ namespace SlothCord
                 case OPCode.Hello:
                     {
                         var hello = JsonConvert.DeserializeObject<GatewayHello>(data.EventPayload);
-                        if (_sessionId == "") await HeartbeatLoop(hello.HeartbeatInterval).ConfigureAwait(false);
+                        if (_sessionId == "")
+                        {
+                            //Send Identify
+                            await HeartbeatLoop(hello.HeartbeatInterval).ConfigureAwait(false);
+                        }
                         else { /*resume*/ }
                         break;
                     }
@@ -191,6 +196,10 @@ namespace SlothCord
                         //Guild Create Event
                         var guild = JsonConvert.DeserializeObject<DiscordGuild>(payload);
                         this.InternalGuilds.Add(guild);
+                        if (this.GuildsToDownload > this.DownloadedGuilds)
+                        {
+                            //GuildsDownloaded Event
+                        }
                         break;
                     }
                 case DispatchType.MessageCreate:

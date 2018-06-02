@@ -53,7 +53,7 @@ namespace SlothCord.Objects
         public IReadOnlyList<DiscordEmbed> Embeds { get; private set; }
 
         [JsonProperty("reactions")]
-        public IReadOnlyList<DiscordEmoji> Reactions { get; private set; }
+        public IReadOnlyList<DiscordGuildEmoji> Reactions { get; private set; }
 
         [JsonProperty("nonce")]
         public ulong? Nonce { get; private set; }

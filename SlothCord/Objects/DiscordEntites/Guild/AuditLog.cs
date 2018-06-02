@@ -131,10 +131,10 @@ namespace SlothCord.Objects
         public string VanityUrlCode { get; private set; }
 
         [JsonProperty("$add")]
-        public IReadOnlyList<DiscordRole> RolesAdded { get; private set; }
+        public IReadOnlyList<DiscordGuildRole> RolesAdded { get; private set; }
 
         [JsonProperty("$remove")]
-        public IReadOnlyList<DiscordRole> RolesRemoved { get; private set; }
+        public IReadOnlyList<DiscordGuildRole> RolesRemoved { get; private set; }
 
         [JsonProperty("prune_delete_days")]
         public int? PruneDeleteDays { get; private set; }
@@ -155,7 +155,7 @@ namespace SlothCord.Objects
         public int? Bitrate { get; private set; }
         
         [JsonProperty("permission_overwrites")]
-        public IReadOnlyList<ChannelOverwrite> ChannelOverwrites { get; private set; }
+        public IReadOnlyList<GuildChannelOverwrite> ChannelOverwrites { get; private set; }
 
         [JsonProperty("nsfw")]
         public bool? Nsfw { get; private set; }

@@ -8,7 +8,7 @@ namespace SlothCord.Objects
 {
     public sealed class DiscordGuild : GuildMethods
     {
-        public async Task<IReadOnlyList<DiscordInvite>> GetInvitesAsync()
+        public async Task<IReadOnlyList<DiscordGuildInvite>> GetInvitesAsync()
             => await base.GetGuildInvitesAsync(this.Id).ConfigureAwait(false);
 
         public async Task<GuildEmbed?> GetEmbedAsync()
@@ -35,7 +35,7 @@ namespace SlothCord.Objects
         public DiscordGuildChannel GetChannel(ulong id)
             => this.Channels.FirstOrDefault(x => x.Id == id);
 
-        public DiscordRole GetRole(ulong id)
+        public DiscordGuildRole GetRole(ulong id)
             => this.Roles.FirstOrDefault(x => x.Id == id);
 
         public async Task<GuildAuditLogData?> GetAuditLogsAsync(ulong? user_id = null, AuditActionType? action_type = null, ulong? before = null, int? limit = null)
@@ -144,10 +144,10 @@ namespace SlothCord.Objects
         public ulong? WidgetChannelId { get; private set; }
 
         [JsonProperty("roles")]
-        public IReadOnlyList<DiscordRole> Roles { get; private set; }
+        public IReadOnlyList<DiscordGuildRole> Roles { get; private set; }
 
         [JsonProperty("emojis")]
-        public IReadOnlyList<DiscordEmoji> Emojis { get; private set; }
+        public IReadOnlyList<DiscordGuildEmoji> Emojis { get; private set; }
 
         [JsonProperty("features")]
         public IReadOnlyList<string> Features { get; private set; }

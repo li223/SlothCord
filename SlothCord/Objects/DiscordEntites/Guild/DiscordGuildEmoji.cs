@@ -5,7 +5,7 @@ using System.Text;
 
 namespace SlothCord.Objects
 {
-    public struct DiscordEmoji
+    public struct DiscordGuildEmoji
     {
         [JsonProperty("id")]
         public ulong Id { get; private set; }
@@ -14,7 +14,7 @@ namespace SlothCord.Objects
         public string Name { get; private set; }
 
         [JsonProperty("roles")]
-        public IReadOnlyList<DiscordRole> Roles { get; private set; }
+        public IReadOnlyList<DiscordGuildRole> Roles { get; private set; }
 
         [JsonProperty("user")]
         public DiscordUser Creator { get; private set; }

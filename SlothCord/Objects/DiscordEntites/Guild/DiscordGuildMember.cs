@@ -10,7 +10,7 @@ namespace SlothCord.Objects
     public sealed class DiscordGuildMember : MemberMethods
     {
         internal DiscordGuildMember(DiscordGuild guild)
-            => this.Roles = this.Guild.Roles.Where(x => this.RoleIds.Any(a => a == x.Id)) as IReadOnlyList<DiscordRole>;
+            => this.Roles = this.Guild.Roles.Where(x => this.RoleIds.Any(a => a == x.Id)) as IReadOnlyList<DiscordGuildRole>;
 
         public async Task BanAsync(int clear_days = 7, string reason = null)
             => await this.Guild.BanMemberAsync(this.UserData.Id, clear_days, reason).ConfigureAwait(false);
@@ -18,10 +18,10 @@ namespace SlothCord.Objects
         public async Task KickAsync()
             => await this.Guild.KickMemberAsync(this.UserData.Id).ConfigureAwait(false);
 
-        public async Task ModifyAsync(string nickname, IReadOnlyList<DiscordRole> roles, bool? is_muted, bool? is_deaf, ulong? channel_id)
+        public async Task ModifyAsync(string nickname, IReadOnlyList<DiscordGuildRole> roles, bool? is_muted, bool? is_deaf, ulong? channel_id)
         {
             if (string.IsNullOrWhiteSpace(nickname)) nickname = this.Nickname;
-            if (roles == null) roles = this.Roles as IReadOnlyList<DiscordRole>;
+            if (roles == null) roles = this.Roles as IReadOnlyList<DiscordGuildRole>;
             if (is_muted == null) is_muted = this.IsMute;
             if (is_deaf == null) is_deaf = this.IsDeaf;
             if (channel_id == null) channel_id = this.ChannelId;
@@ -33,7 +33,7 @@ namespace SlothCord.Objects
             var rollist = this.Roles.ToList();
             var toremove = rollist?.FirstOrDefault(x => x.Id == role_id);
             if (toremove == null) return;
-            rollist.Remove((DiscordRole)toremove);
+            rollist.Remove((DiscordGuildRole)toremove);
             await base.ModifyAsync(this.Guild.Id, this.UserData.Id, this.Nickname, rollist, this.IsMute, this.IsDeaf, this.ChannelId).ConfigureAwait(false);
         }
 
@@ -42,25 +42,25 @@ namespace SlothCord.Objects
             var rolelist = this.Roles.ToList();
             var toadd = this.Guild.Roles?.FirstOrDefault(x => x.Id == role_id);
             if (toadd == null) return;
-            rolelist.Add((DiscordRole)toadd);
+            rolelist.Add((DiscordGuildRole)toadd);
             await base.ModifyAsync(this.Guild.Id, this.UserData.Id, this.Nickname, rolelist, this.IsMute, this.IsDeaf, this.ChannelId).ConfigureAwait(false);
         }
 
-        public async Task RemoveRoleAsync(DiscordRole role)
+        public async Task RemoveRoleAsync(DiscordGuildRole role)
         {
             var rolelist = this.Roles.ToList();
             var toremove = rolelist?.FirstOrDefault(x => x.Id == role.Id);
             if (toremove == null) return;
-            rolelist.Remove((DiscordRole)toremove);
+            rolelist.Remove((DiscordGuildRole)toremove);
             await base.ModifyAsync(this.Guild.Id, this.UserData.Id, this.Nickname, rolelist, this.IsMute, this.IsDeaf, this.ChannelId).ConfigureAwait(false);
         }
 
-        public async Task GiveRoleAsync(DiscordRole role)
+        public async Task GiveRoleAsync(DiscordGuildRole role)
         {
             var rolelist = this.Roles.ToList();
             var toadd = this.Guild.Roles?.FirstOrDefault(x => x.Id == role.Id);
             if (toadd == null) return;
-            rolelist.Add((DiscordRole)toadd);
+            rolelist.Add((DiscordGuildRole)toadd);
             await base.ModifyAsync(this.Guild.Id, this.UserData.Id, this.Nickname, rolelist, this.IsMute, this.IsDeaf, this.ChannelId).ConfigureAwait(false);
         }
 
@@ -70,7 +70,7 @@ namespace SlothCord.Objects
             return await channel.SendMessageAsync(content, false, embed).ConfigureAwait(false);
         }
 
-        public bool HasRole(DiscordRole role)
+        public bool HasRole(DiscordGuildRole role)
             => (this.Roles == null) ? false : this.Roles.Any(x => x.Id == role.Id);
 
         public bool HasRole(ulong id)
@@ -95,7 +95,7 @@ namespace SlothCord.Objects
         internal IReadOnlyList<ulong> RoleIds { get; set; }
 
         [JsonIgnore]
-        public IReadOnlyList<DiscordRole> Roles { get; internal set; }
+        public IReadOnlyList<DiscordGuildRole> Roles { get; internal set; }
 
         [JsonIgnore]
         public DiscordGuild Guild { get; internal set; }

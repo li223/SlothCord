@@ -5,7 +5,7 @@ using System.Text;
 
 namespace SlothCord.Objects
 {
-    public struct DiscordRole
+    public struct DiscordGuildRole
     {
         [JsonProperty("position")]
         public int Postition { get; private set; }

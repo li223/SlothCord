@@ -2,7 +2,7 @@
 
 namespace SlothCord.Objects
 {
-    public struct DiscordInvite
+    public struct DiscordGuildInvite
     {
         [JsonProperty("code")]
         public string Code { get; private set; }

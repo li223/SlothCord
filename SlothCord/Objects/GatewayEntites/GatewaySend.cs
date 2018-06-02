@@ -129,7 +129,7 @@ namespace SlothCord.Objects
         public int? UserLimit { get; set; }
 
         [JsonProperty("permission_overwrites", NullValueHandling = NullValueHandling.Ignore)]
-        public IReadOnlyList<ChannelOverwrite> PermissionOverwrites { get; set; }
+        public IReadOnlyList<GuildChannelOverwrite> PermissionOverwrites { get; set; }
 
         [JsonProperty("parent_id", NullValueHandling = NullValueHandling.Ignore)]
         public ulong? ParentId { get; set; }

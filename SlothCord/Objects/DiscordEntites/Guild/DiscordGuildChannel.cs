@@ -9,7 +9,7 @@ namespace SlothCord.Objects
 {
     public sealed class DiscordGuildChannel : ChannelMethods
     {
-        public async Task<DiscordChannel> ModifyAsync(string name = null, int? position = null, string topic = null, bool? nsfw = null, int? bitrate = null, int? user_limit = null, IReadOnlyList<ChannelOverwrite> permission_overwrites = null, ulong? parent_id = null)
+        public async Task<DiscordChannel> ModifyAsync(string name = null, int? position = null, string topic = null, bool? nsfw = null, int? bitrate = null, int? user_limit = null, IReadOnlyList<GuildChannelOverwrite> permission_overwrites = null, ulong? parent_id = null)
             => await base.ModifyGuildChannelAsync(this.Id, name, position, topic, nsfw, bitrate, user_limit, permission_overwrites, parent_id);
 
         public async Task<DiscordMessage> SendFileAsync(string file_path, string message = null)
@@ -18,10 +18,10 @@ namespace SlothCord.Objects
         public async Task<DiscordMessage> PingB1nzyAsync()
             => await base.CreateMessageAsync(this.Id, "<&!80351110224678912>", false, null).ConfigureAwait(false);
 
-        public async Task<DiscordInvite?> DeleteInviteAsync(string code)
+        public async Task<DiscordGuildInvite?> DeleteInviteAsync(string code)
             => await base.DeleteDiscordInviteAsync(code).ConfigureAwait(false);
 
-        public async Task<IReadOnlyList<DiscordInvite>> GetInvitesAsync()
+        public async Task<IReadOnlyList<DiscordGuildInvite>> GetInvitesAsync()
             => await base.GetChannelInvitesAsync(this.Id).ConfigureAwait(false);
 
         public async Task DeleteMessageAsync(ulong message_id)
@@ -61,7 +61,7 @@ namespace SlothCord.Objects
         public ChannelType Type { get; private set; }
 
         [JsonProperty("permission_overwrites")]
-        public IReadOnlyList<ChannelOverwrite> Permissions { get; internal set; }
+        public IReadOnlyList<GuildChannelOverwrite> Permissions { get; internal set; }
 
         [JsonProperty("nsfw")]
         public bool Nsfw { get; internal set; }

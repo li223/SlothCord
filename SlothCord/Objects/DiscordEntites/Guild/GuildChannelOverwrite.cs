@@ -5,7 +5,7 @@ using System.Text;
 
 namespace SlothCord.Objects
 {
-    public struct ChannelOverwrite
+    public struct GuildChannelOverwrite
     {
         [JsonProperty("id")]
         public ulong Id { get; private set; }
