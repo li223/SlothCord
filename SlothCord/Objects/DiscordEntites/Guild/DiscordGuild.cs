@@ -38,7 +38,7 @@ namespace SlothCord.Objects
         public DiscordRole GetRole(ulong id)
             => this.Roles.FirstOrDefault(x => x.Id == id);
 
-        public async Task<GuildAuditLogData> GetAuditLogsAsync(ulong? user_id = null, AuditActionType? action_type = null, ulong? before = null, int? limit = null)
+        public async Task<GuildAuditLogData?> GetAuditLogsAsync(ulong? user_id = null, AuditActionType? action_type = null, ulong? before = null, int? limit = null)
             => await base.ListAuditLogsAsync(this.Id, user_id, action_type, before, limit).ConfigureAwait(false);
 
         public async Task LeaveAsync()
@@ -90,7 +90,7 @@ namespace SlothCord.Objects
         public bool IsLarge { get; private set; }
 
         [JsonProperty("voice_states")]
-        public IReadOnlyList<DiscordVoiceState> VoiceStates { get; private set; }
+        public IReadOnlyList<UserVoiceState> VoiceStates { get; private set; }
 
         [JsonProperty("system_channel_id")]
         public ulong? DefaultChannelId { get; private set; }
