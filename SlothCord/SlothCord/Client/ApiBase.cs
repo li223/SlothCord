@@ -1,80 +1,48 @@
+using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
+using WebSocket4Net;
 using System.Threading.Tasks;
+using SlothCord.Objects;
 
-namespace SlothCord.Objects
+namespace SlothCord
 {
-    public static class Extensions
+    public class ApiBase
     {
-        private static int _ratelimit { get; set; }
-        private static DispatchType _prevType { get; set; }
-        private static DateTimeOffset _lastRequestStamp { get; set; }
+        protected internal static HttpClient _httpClient = new HttpClient();
 
-        public static async Task<string> SendRequestAsync(this HttpClient http, HttpRequestMessage msg, DispatchType type)
+        protected internal static WebSocket WebSocketClient { get; set; }
+
+        protected internal static Uri _baseAddress = new Uri("https://discordapp.com/api/v7");
+
+        protected internal async Task<string> RetryAsync(int retry_in, HttpRequestMessage msg)
         {
-            string content = "";
-            switch (type)
-            {
-                case DispatchType.MessageCreate:
-                    {
-                        if (_prevType != DispatchType.MessageCreate)
-                        {
-                            _prevType = DispatchType.MessageCreate;
-                            _ratelimit = 5;
-                        }
-                        else _ratelimit -= 1;
-                        var timediff = DateTimeOffset.Now - _lastRequestStamp;
-                        if (timediff.Seconds > 5)
-                        {
-                            _lastRequestStamp = DateTime.Now;
-                            _ratelimit = 5;
-                        }
-                        if (_ratelimit <= -1 && timediff.Seconds <= 5)
-                            content = await InternalWaitAsync(http, 5000, msg).ConfigureAwait(false);
-                        else
-                        {
-                            var response = await http.SendAsync(msg).ConfigureAwait(false);
-                            content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                        }
-                        break;
-                    }
-
-                case DispatchType.MessageDelete:
-                    {
-                        if (_prevType != DispatchType.MessageDelete)
-                        {
-                            _prevType = DispatchType.MessageDelete;
-                            _ratelimit = 5;
-                        }
-                        else _ratelimit -= 1;
-                        var timediff = DateTimeOffset.Now - _lastRequestStamp;
-                        if (timediff.Seconds > 1)
-                        {
-                            _lastRequestStamp = DateTime.Now;
-                            _ratelimit = 5;
-                        }
-                        if (_ratelimit <= -1 && timediff.Seconds <= 1)
-                            content = await InternalWaitAsync(http, 1000, msg).ConfigureAwait(false);
-                        else
-                        {
-                            var response = await http.SendAsync(msg).ConfigureAwait(false);
-                            content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                        }
-                        break;
-                    }
-            }
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Gateway Ratelimit Reached, waiting {retry_in}ms");
+            Console.ForegroundColor = ConsoleColor.White;
+            await Task.Delay(retry_in).ConfigureAwait(false);
+            var response = await _httpClient.SendAsync(msg).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             return content;
         }
 
-        static async Task<string> InternalWaitAsync(HttpClient client, int retry_in, HttpRequestMessage msg)
+        public async Task<DiscordApplication?> GetCurrentApplicationAsync()
         {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Internal Ratelimit Reached, waiting {retry_in}ms");
-            Console.ForegroundColor = ConsoleColor.White;
-            await Task.Delay(retry_in).ConfigureAwait(false);
-            var response = await client.SendAsync(msg).ConfigureAwait(false);
+            var msg = new HttpRequestMessage(HttpMethod.Get, new Uri($"{_baseAddress}/oauth2/applications/@me"));
+            var response = await _httpClient.SendAsync(msg).ConfigureAwait(false);
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-            return content;
+            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordApplication>(content);
+            else return null;
+        }
+
+        public async Task<IEnumerable<VoiceRegion>> GetVoiceRegionsAsync()
+        {
+            var msg = new HttpRequestMessage(HttpMethod.Get, new Uri($"{_baseAddress}/voice/regions"));
+            var response = await _httpClient.SendAsync(msg).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<IEnumerable<VoiceRegion>>(content);
+            else return null;
         }
     }
 }
