@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using SlothCord.Objects;
 
-namespace SlothCord.Rest
+namespace SlothCord
 {
     public class MessageMethods : ApiBase
     {
