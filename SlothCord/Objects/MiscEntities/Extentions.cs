@@ -10,9 +10,9 @@ namespace SlothCord.Objects
         private static DispatchType _prevType { get; set; }
         private static DateTimeOffset _lastRequestStamp { get; set; }
 
-        public static async Task<string> SendRequestAsync(this HttpClient http, ApiBase apibase, HttpRequestMessage msg, DispatchType type)
+        public static async Task<HttpResponseMessage> SendRequestAsync(this HttpClient http, HttpRequestMessage msg, DispatchType type)
         {
-            string content = "";
+            HttpResponseMessage httpResponse = null;
             switch (type)
             {
                 case DispatchType.MessageCreate:
@@ -30,12 +30,8 @@ namespace SlothCord.Objects
                             _ratelimit = 5;
                         }
                         if (_ratelimit <= -1 && timediff.Seconds <= 5)
-                            content = await apibase.RetryAsync(5000, msg).ConfigureAwait(false);
-                        else
-                        {
-                            var response = await http.SendAsync(msg).ConfigureAwait(false);
-                            content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                        }
+                            httpResponse = await InternalWaitAsync(http, 5000, msg).ConfigureAwait(false);
+                        else httpResponse = await http.SendAsync(msg).ConfigureAwait(false);
                         break;
                     }
 
@@ -54,16 +50,22 @@ namespace SlothCord.Objects
                             _ratelimit = 5;
                         }
                         if (_ratelimit <= -1 && timediff.Seconds <= 1)
-                            content = await apibase.RetryAsync(1000, msg).ConfigureAwait(false);
-                        else
-                        {
-                            var response = await http.SendAsync(msg).ConfigureAwait(false);
-                            content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                        }
+                            httpResponse = await InternalWaitAsync(http, 1000, msg).ConfigureAwait(false);
+                        else httpResponse = await http.SendAsync(msg).ConfigureAwait(false);
                         break;
                     }
             }
-            return content;
+            return httpResponse;
+        }
+
+        static async Task<HttpResponseMessage> InternalWaitAsync(HttpClient client, int retry_in, HttpRequestMessage msg)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Internal Ratelimit Reached, waiting {retry_in}ms");
+            Console.ForegroundColor = ConsoleColor.White;
+            await Task.Delay(retry_in).ConfigureAwait(false);
+            var response = await client.SendAsync(msg).ConfigureAwait(false);
+            return response;
         }
     }
 }
