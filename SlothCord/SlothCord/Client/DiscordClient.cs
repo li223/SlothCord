@@ -21,6 +21,7 @@ namespace SlothCord
         public event GuildCreated GuildCreated;
         public event UnkownOpCode UnknownOPCodeReceived;
         public event UnkownEvent UnknownEventReceived;
+        public event MessageCreated MessageReceived;
 
         private List<DiscordGuild> _internalGuilds { get; set; }
         private bool _heartbeat = true;
@@ -247,6 +248,7 @@ namespace SlothCord
                 case DispatchType.MessageCreate:
                     {
                         var msg = JsonConvert.DeserializeObject<DiscordMessage>(payload);
+                        this.MessageReceived?.Invoke(this, msg).ConfigureAwait(false);
                         //if(msg.Content.StartsWith(prefix))
                         //Command start here
                         //Message Create Event
