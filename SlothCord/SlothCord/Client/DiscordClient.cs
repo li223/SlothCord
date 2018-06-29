@@ -215,7 +215,7 @@ namespace SlothCord
                     }
                 default:
                     {
-                        this.UnknownOPCodeReceived?.Invoke(this, (int)data.Code, data.EventName);
+                        this.UnknownOPCodeReceived?.Invoke(this, (int)data.Code, data.EventName).ConfigureAwait(false);
                         break;
                     }
             }
@@ -254,7 +254,7 @@ namespace SlothCord
                     }
                 default:
                     {
-                        this.UnknownEventReceived?.Invoke(this, (int)code, payload);
+                        this.UnknownEventReceived?.Invoke(this, (int)code, payload).ConfigureAwait(false);
                         break;
                     }
             }
