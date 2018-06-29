@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using SlothCord.Objects;
 
-namespace SlothCord
+namespace SlothCord.Rest
 {
     public class MessageMethods : ApiBase
     {
@@ -42,7 +42,7 @@ namespace SlothCord
         internal async Task DeleteMessageAsync(ulong channel_id, ulong message_id)
         {
             var msg = new HttpRequestMessage(HttpMethod.Delete, new Uri($"{_baseAddress}/channels/{channel_id}/messages/{message_id}"));
-            var response = await _httpClient.SendAsync(msg).ConfigureAwait(false);
+            var response = await _httpClient.SendRequestAsync(msg, DispatchType.MessageDelete).ConfigureAwait(false);
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
