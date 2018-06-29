@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using SlothCord.CommandService;
+using SlothCord.Commands;
 using SlothCord.Objects;
 using System;
 using System.Collections.Generic;
@@ -19,6 +19,8 @@ namespace SlothCord
         public event SocketClosed SocketClosed;
         public event GuildsDownloaded GuildsDownloaded;
         public event GuildCreated GuildCreated;
+        public event UnkownOpCode UnknownOPCodeReceived;
+        public event UnkownEvent UnknownEventReceived;
 
         private List<DiscordGuild> _internalGuilds { get; set; }
         private bool _heartbeat = true;
@@ -92,15 +94,15 @@ namespace SlothCord
 
         public async Task ConnectAsync()
         {
-            if (string.IsNullOrWhiteSpace(this.Token)) throw new ArgumentNullException("You must supply a valid token");
-            if (TokenType != TokenType.Bot) throw new ArgumentException("Only Bot tokens are currently supported");
+            if (string.IsNullOrWhiteSpace(this.Token)) throw new NullReferenceException("You must supply a valid token");
+            if (TokenType != TokenType.Bot) throw new Exception("Only Bot tokens are currently supported");
             _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bot {this.Token}");
             _httpClient.DefaultRequestHeaders.Add("User-Agent", $"DiscordBot ($https://github.com/li223/SlothCord, ${this.Version})");
             var response = await _httpClient.GetAsync($"{_baseAddress}/gateway/bot").ConfigureAwait(false);
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             var data = JObject.Parse(content);
             if (!response.IsSuccessStatusCode) throw new Exception($"Gateway returned: {data["message"].ToString()}");
-            var shards = data["shards"].ToString();
+            var shards = int.Parse(data["shards"].ToString());
             var url = data["url"].ToString();
             WebSocketClient = new WebSocket(url);
             WebSocketClient.MessageReceived += WebSocketClient_MessageReceived;
@@ -213,7 +215,7 @@ namespace SlothCord
                     }
                 default:
                     {
-                        //Unknown opcode event
+                        this.UnknownOPCodeReceived?.Invoke(this, (int)data.Code, data.EventName);
                         break;
                     }
             }
@@ -252,7 +254,7 @@ namespace SlothCord
                     }
                 default:
                     {
-                        //Unkown Dispatch event
+                        this.UnknownEventReceived?.Invoke(this, (int)code, payload);
                         break;
                     }
             }
