@@ -16,7 +16,7 @@ namespace SlothCord.Objects
         public OPCode Code { get; set; }
 
         [JsonProperty("d")]
-        public string EventPayload { get; set; }
+        public object EventPayload { get; set; }
     }
 
     internal struct GatewayClose

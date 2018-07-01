@@ -12,29 +12,30 @@ namespace SlothCord.Commands
     public class CommandsProvider
     {
         public string Prefix { get; set; }
+        public IServiceProvider Services { get; set; }
+        public bool AllowDms { get; set; } = false;
+
         public event CommandErroredEvent CommandErrored;
 
-        public List<Command?> CommandsList { get; private set;} = new List<Command?>();
+        public List<Command?> CommandsList { get; private set; } = new List<Command?>();
         public List<CommandGroup?> GroupCommandsList { get; private set; } = new List<CommandGroup?>();
 
-        public Task AddCommandAsync<T>() where T : new()
+        public Task AddCommandModuleAsync<T>() where T : new()
         {
-            var methods = (((typeof(T)).GetMethods()).Where(x => x.IsPublic && (x.GetCustomAttribute<CommandAttribute>() != null)) as IReadOnlyList<MethodInfo>);
+            var type = typeof(T);
 
-            var groups = (((typeof(T)).GetNestedTypes()).Where(x => x.IsPublic && (x.GetCustomAttribute<GroupAttribute>() != null)) as IReadOnlyList<Type>);
-
-            for (var count = 0; count < methods.Count(); count++)
+            CommandsList.AddRange(type.GetMethods().Where(x => x.HasAttribute<CommandAttribute>() && x.IsPublic).Select(x => new Command()
             {
-                CommandsList.Add(new Command()
-                {
-                    ClassInstance = new T(),
-                    Method = methods[count],
-                    CommandName = methods[count].GetCustomAttribute<CommandAttribute>().CommandName,
-                    MethodParams = methods[count].GetParameters()
-                });
-            }
+                ClassInstance = new T(),
+                Method = x,
+                MethodParams = x.GetParameters(),
+                CommandName = x.GetCustomAttribute<CommandAttribute>().CommandName,
+                ParentCommandName = null
+            } as Command?));
 
-            for (var count = 0; count < groups.Count(); count++)
+            var groups = typeof(T).GetNestedTypes().Where(x => x.IsPublic && (x.HasAttribute<GroupAttribute>())) as IReadOnlyList<Type>;
+
+            for (var count = 0; count < groups?.Count(); count++)
             {
                 var submths = groups[count].GetMethods().Where(x => x.IsPublic && (x.GetCustomAttribute<CommandAttribute>() != null)) as IReadOnlyList<MethodInfo>;
                 var subcmds = new List<Command>();
@@ -43,15 +44,15 @@ namespace SlothCord.Commands
                     subcmds.Add(new Command()
                     {
                         ClassInstance = groups[count],
-                        Method = methods[i],
-                        CommandName = methods[i].GetCustomAttribute<CommandAttribute>().CommandName,
+                        Method = CommandsList[i].Value.Method,
+                        CommandName = CommandsList[i].Value.Method.GetCustomAttribute<CommandAttribute>().CommandName,
                         ParentCommandName = groups[count].GetCustomAttribute<GroupAttribute>().GroupName
                     });
                 }
 
                 GroupCommandsList.Add(new CommandGroup()
                 {
-                    GroupName = methods[count].GetCustomAttribute<GroupAttribute>().GroupName,
+                    GroupName = CommandsList[count].Value.Method.GetCustomAttribute<GroupAttribute>().GroupName,
                     SubCommands = subcmds
                 });
             }
@@ -66,9 +67,9 @@ namespace SlothCord.Commands
             var arguements = new List<string>();
             var sb = new StringBuilder();
             var addon = false;
-            for(var i = 0; i < arr.Count; i++)
+            for (var i = 0; i < arr.Count; i++)
             {
-                switch(arr[i])
+                switch (arr[i])
                 {
                     case '"':
                         {
@@ -93,6 +94,8 @@ namespace SlothCord.Commands
                         }
                 }
             }
+            if (!string.IsNullOrWhiteSpace(sb.ToString()))
+                arguements.Add(sb.ToString());
             return Task.FromResult(arguements);
         }
 
@@ -103,7 +106,23 @@ namespace SlothCord.Commands
                 var passingargs = new List<object>();
                 if (IsSubCommand) Args.RemoveRange(0, 2);
                 else Args.RemoveAt(0);
-                for(var i = 0; i < Args.Count; i++)
+                if (Target.MethodParams[0].ParameterType == typeof(SlothContext))
+                {
+                    var guild = client.Guilds.FirstOrDefault(x => x.Channels.Any(a => a.Id == msg.ChannelId));
+                    var channel = guild?.Channels.FirstOrDefault(x => x.Id == msg.ChannelId);
+                    passingargs.Add(new SlothContext()
+                    {
+                        GuildChannel = channel,
+                        Channel = client.PrivateChannels.FirstOrDefault(x => x.Id == msg.ChannelId),
+                        InvokingMember = guild.Members.FirstOrDefault(x => x.UserData.Id == msg.UserAuthor.Id),
+                        Guild = guild,
+                        InvokingUser = msg.UserAuthor,
+                        Message = msg,
+                        Provider = this,
+                        Services = this.Services
+                    });
+                }
+                for (var i = 0; i < Args.Count; i++)
                 {
                     object arg = null;
                     if (Regex.IsMatch(Args[i], @"^(<@!?[\d]+>)$"))
@@ -118,7 +137,7 @@ namespace SlothCord.Commands
                         else if (Target.MethodParams[i].ParameterType == typeof(DiscordUser)) arg = await client.GetUserAsync(id).ConfigureAwait(false);
                         else arg = Convert.ChangeType(Args[i], Target.MethodParams[i].ParameterType);
                     }
-                    else if(ulong.TryParse(Args[i], out ulong res))
+                    else if (ulong.TryParse(Args[i], out ulong res))
                     {
                         if (Target.MethodParams[i].ParameterType == typeof(DiscordGuildMember))
                         {
@@ -132,9 +151,11 @@ namespace SlothCord.Commands
                     else arg = Convert.ChangeType(Args[i], Target.MethodParams[i].ParameterType);
                     passingargs.Add(arg);
                 }
-                Target.Method.Invoke(Target.ClassInstance, passingargs.ToArray());
+                if (passingargs.Count == 0)
+                    Target.Method.Invoke(Target.ClassInstance, passingargs.ToArray());
+                else Target.Method.Invoke(Target.ClassInstance, passingargs.ToArray());
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 this.CommandErrored?.Invoke(ex).ConfigureAwait(false);
             }
@@ -156,30 +177,29 @@ namespace SlothCord.Commands
         public List<Command> SubCommands { get; internal set; }
     }
 
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public sealed class CommandAttribute : Attribute
+    public class SlothContext : ChannelMethods
     {
-        internal string CommandName { get; set; }
-        public CommandAttribute(string Name)
+        public DiscordUser InvokingUser { get; internal set; }
+        public DiscordGuildMember InvokingMember { get; internal set; }
+        public DiscordGuild Guild { get; internal set; }
+        public DiscordMessage Message { get; internal set; }
+        public DiscordGuildChannel GuildChannel { get; internal set; }
+        public DiscordChannel Channel { get; internal set; }
+        public CommandsProvider Provider { get; internal set; }
+        public IServiceProvider Services { get; internal set; }
+
+        public async Task ReplyAsync(string message = null, bool istts = false, DiscordEmbed embed = null)
         {
-            this.CommandName = Name;
+            var id = (GuildChannel != null) ? GuildChannel.Id : Channel.Id;
+            await base.CreateMessageAsync(id, message, istts, embed).ConfigureAwait(false);
         }
     }
-
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public sealed class GroupAttribute : Attribute
+    public static class Extensions
     {
-        internal string GroupName { get; set; }
-        internal bool RequireSubCommand { get; set; }
+        public static bool HasAttribute<T>(this MethodInfo method)
+            => method.CustomAttributes.Any(x => x.AttributeType == typeof(T));
 
-        public GroupAttribute(string Name, bool RequiresSubCommand)
-        {
-            this.GroupName = Name;
-            this.RequireSubCommand = RequiresSubCommand;
-        }
+        public static bool HasAttribute<T>(this Type type)
+            => type.CustomAttributes.Any(x => x.AttributeType == typeof(T));
     }
-
-    [AttributeUsage(AttributeTargets.Parameter)]
-    public sealed class RemainingStringAttribute : Attribute
-    { }
 }

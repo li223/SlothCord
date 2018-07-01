@@ -153,7 +153,7 @@ namespace SlothCord.Objects
         public IEnumerable<string> Features { get; private set; }
 
         [JsonProperty("presences")]
-        public IEnumerable<DiscordPresence> Presences { get; private set; }
+        public IEnumerable<DiscordPresence?> Presences { get; private set; }
 
         [JsonProperty("members")]
         public IEnumerable<DiscordGuildMember> Members { get; private set; }

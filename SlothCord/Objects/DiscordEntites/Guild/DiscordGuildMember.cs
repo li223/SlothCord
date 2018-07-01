@@ -9,9 +9,6 @@ namespace SlothCord.Objects
 {
     public sealed class DiscordGuildMember : MemberMethods
     {
-        internal DiscordGuildMember(DiscordGuild guild)
-            => this.Roles = this.Guild.Roles.Where(x => this.RoleIds.Any(a => a == x.Id)) as IEnumerable<DiscordGuildRole>;
-
         public async Task BanAsync(int clear_days = 7, string reason = null)
             => await this.Guild.BanMemberAsync(this.UserData.Id, clear_days, reason).ConfigureAwait(false);
 

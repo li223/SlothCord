@@ -38,6 +38,7 @@ namespace SlothCord
 #endif
         }
 
+#pragma warning disable CS1998
         private async void WebSocketClient_Closed(object sender, EventArgs e)
         {
             _heartbeat = false;
@@ -57,6 +58,7 @@ namespace SlothCord
 #endif
             }
         }
+#pragma warning restore CS1998
 
         private void WebSocketClient_Opened(object sender, EventArgs e) => this.SocketOpened?.Invoke().ConfigureAwait(false);
 
@@ -79,19 +81,21 @@ namespace SlothCord
 
         private Task SendIdentifyAsync()
         {
-            var Content = JsonConvert.SerializeObject(new IdentifyPayload()
+            var Content = new IdentifyPayload()
             {
                 Token = $"{this.TokenType} {this.Token}",
                 Properties = new Properties(),
                 Compress = false,
                 LargeThreashold = this.LargeThreashold,
                 Shard = new[] { 0, 1 }
-            });
+            };
+
             var pldata = new GatewayEvent()
             {
                 Code = OPCode.Identify,
                 EventPayload = Content
             };
+
             var payload = JsonConvert.SerializeObject(pldata);
             WebSocketClient.Send(payload);
             return Task.CompletedTask;
@@ -115,7 +119,7 @@ namespace SlothCord
             {
                 case OPCode.Hello:
                     {
-                        var hello = JsonConvert.DeserializeObject<GatewayHello>(data.EventPayload);
+                        var hello = JsonConvert.DeserializeObject<GatewayHello>(data.EventPayload.ToString());
                         if (_sessionId == "")
                         {
                             await SendIdentifyAsync().ConfigureAwait(false);
@@ -132,8 +136,13 @@ namespace SlothCord
                     }
                 case OPCode.Dispatch:
                     {
-                        var type = Enum.TryParse(data.EventName, out DispatchType res);
-                        await HandleDispatchEventAsync(res, data.EventPayload).ConfigureAwait(false);
+#if NETCORE
+                        var type = Enum.TryParse(typeof(DispatchType), data.EventName.Replace("_", ""), true, out object res);
+                        await HandleDispatchEventAsync((DispatchType)res, data.EventPayload.ToString()).ConfigureAwait(false);
+#else
+                        var type = Enum.TryParse(data.EventName.Replace("_", "").ToLower(), out DispatchType res);
+                        await HandleDispatchEventAsync(res, data.EventPayload.ToString()).ConfigureAwait(false);
+#endif
                         break;
                     }
                 default:
@@ -158,12 +167,18 @@ namespace SlothCord
                 case DispatchType.GuildCreate:
                     {
                         var guild = JsonConvert.DeserializeObject<DiscordGuild>(payload);
-                        this.GuildCreated?.Invoke(guild).ConfigureAwait(false);
                         this._internalGuilds.Add(guild);
                         this._downloadedGuilds++;
-                        if (this._guildsToDownload > this._downloadedGuilds)
+                        foreach(var member in guild.Members)
+                        {
+                            member.Guild = guild;
+                            member.Roles = guild.Roles.Where(x => member.RoleIds.Any(a => a == x.Id)) as IEnumerable<DiscordGuildRole>;
+                        }
+                        this.GuildCreated?.Invoke(guild).ConfigureAwait(false);
+                        if (this._guildsToDownload == this._downloadedGuilds)
                         {
                             this.Guilds = this._internalGuilds;
+                            this.PrivateChannels = await GetPrivateChannelsAsync().ConfigureAwait(false);
                             this.GuildsDownloaded?.Invoke(this.Guilds).ConfigureAwait(false);
                         }  
                         break;
@@ -175,18 +190,15 @@ namespace SlothCord
                         if (msg.Content.StartsWith(CommandsProvider.Prefix))
                         {
                             var args = await CommandsProvider.ParseArguementsAsync(msg).ConfigureAwait(false);
-                            if (args.Count > 0)
+                            Command? cmd;
+                            bool sub = false;
+                            cmd = CommandsProvider.CommandsList.FirstOrDefault(x => x?.CommandName == args[0]);
+                            if (cmd == null)
                             {
-                                Command? cmd;
-                                bool sub = false;
-                                cmd = CommandsProvider.CommandsList.FirstOrDefault(x => x?.CommandName == args[0]);
-                                if (cmd == null)
-                                {
-                                    cmd = CommandsProvider.GroupCommandsList.FirstOrDefault(x => x?.GroupName == args[0])?.SubCommands.FirstOrDefault(x => x.CommandName == args[1]);
-                                    sub = true;
-                                }
-                                if(cmd != null) await CommandsProvider.ExecuteCommandAsync(args, (Command)cmd, sub, this, msg);
+                                cmd = CommandsProvider.GroupCommandsList.FirstOrDefault(x => x?.GroupName == args[0])?.SubCommands.FirstOrDefault(x => x.CommandName == args[1]);
+                                sub = true;
                             }
+                            if (cmd != null) await CommandsProvider.ExecuteCommandAsync(args, (Command)cmd, sub, this, msg);
                         }
                         break;
                     }
@@ -219,7 +231,7 @@ namespace SlothCord
         public event MessageCreatedEvent MessageReceived;
         public event MemberAddedEvent MemberAdded;
 
-        private List<DiscordGuild> _internalGuilds { get; set; }
+        private List<DiscordGuild> _internalGuilds = new List<DiscordGuild>();
         private bool _heartbeat = true;
         private int _heartbeatInterval = 0;
         private string _sessionId = "";
@@ -289,6 +301,8 @@ namespace SlothCord
 
         public IEnumerable<DiscordGuild> Guilds { get; internal set; }
 
+        public IEnumerable<DiscordChannel> PrivateChannels { get; internal set; }
+
         public async Task<DiscordUser> GetUserAsync(ulong user_id)
         {
             var msg = new HttpRequestMessage(HttpMethod.Get, new Uri($"{_baseAddress}/users/{user_id}"));
@@ -303,6 +317,36 @@ namespace SlothCord
             {
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
                     return JsonConvert.DeserializeObject<DiscordUser>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg).ConfigureAwait(false));
+                else return null;
+            }
+        }
+
+        public async Task<DiscordGuild> GetGuildAsync(ulong guild_id)
+        {
+            var msg = new HttpRequestMessage(HttpMethod.Get, new Uri($"{_baseAddress}/@me/guilds/{guild_id}"));
+            var response = await _httpClient.SendAsync(msg).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+                return JsonConvert.DeserializeObject<DiscordGuild>(content);
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
+                    return JsonConvert.DeserializeObject<DiscordGuild>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg).ConfigureAwait(false));
+                else return null;
+            }
+        }
+
+        public async Task<IEnumerable<DiscordChannel>> GetPrivateChannelsAsync()
+        {
+            var msg = new HttpRequestMessage(HttpMethod.Get, new Uri($"{_baseAddress}/users/@me/channels"));
+            var response = await _httpClient.SendAsync(msg).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+                return JsonConvert.DeserializeObject<IEnumerable<DiscordChannel>>(content);
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
+                    return JsonConvert.DeserializeObject<IEnumerable<DiscordChannel>>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg).ConfigureAwait(false));
                 else return null;
             }
         }

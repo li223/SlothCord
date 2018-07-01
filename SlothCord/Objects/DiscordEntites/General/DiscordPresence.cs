@@ -5,7 +5,7 @@ namespace SlothCord.Objects
     public struct DiscordPresence
     {
         [JsonProperty("game")]
-        public DiscordGame Game { get; private set; }
+        public DiscordGame? Game { get; private set; }
 
         [JsonProperty("status")]
         public StatusType? Status { get; private set; }

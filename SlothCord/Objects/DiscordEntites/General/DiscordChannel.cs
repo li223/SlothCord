@@ -36,9 +36,6 @@ namespace SlothCord.Objects
         [JsonProperty("name")]
         public string Name { get; internal set; }
 
-        [JsonProperty("icon")]
-        public string IconUrl { get; private set; }
-
         [JsonProperty("type")]
         public ChannelType Type { get; private set; }
 
@@ -53,6 +50,9 @@ namespace SlothCord.Objects
 
         [JsonProperty("owner_id")]
         public ulong OwnerId { get; private set; }
+
+        [JsonIgnore]
+        public string IconUrl { get => $"https://discordapp.com/channels/{this.Id}/{this.Icon}.png"; }
 
         [JsonIgnore]
         public DiscordUser Owner { get; internal set; }
