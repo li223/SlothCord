@@ -1,15 +1,18 @@
 using SlothCord.Objects;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace SlothCord
 {
-    public delegate Task SocketOpened(object sender);
-    public delegate Task SocketClosed(object sender, string reason);
-    public delegate Task Heartbeated(object sender);
-    public delegate Task GuildsDownloaded(object sender, IEnumerable<DiscordGuild> Guilds);
-    public delegate Task GuildCreated(object sender, DiscordGuild guild);
-    public delegate Task UnkownOpCode(object sender, int code, string name);
-    public delegate Task UnkownEvent(object sender, int code, string payload);
-    public delegate Task MessageCreated(object sender, DiscordMessage message);
+    public delegate Task SocketOpenedEvent();
+    public delegate Task SocketClosedEvent(string reason);
+    public delegate Task HeartbeatedEvent();
+    public delegate Task GuildsDownloadedEvent(IEnumerable<DiscordGuild> Guilds);
+    public delegate Task GuildCreatedEvent(DiscordGuild guild);
+    public delegate Task UnkownOpCodeEvent(int code, string name);
+    public delegate Task UnkownEvent(int code, string payload);
+    public delegate Task MessageCreatedEvent(DiscordMessage message);
+    public delegate Task MemberAddedEvent(DiscordGuild guild, DiscordGuildMember member);
+    public delegate Task CommandErroredEvent(Exception exception);
 }

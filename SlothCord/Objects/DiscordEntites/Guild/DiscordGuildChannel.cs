@@ -7,10 +7,10 @@ using System.Threading.Tasks;
 
 namespace SlothCord.Objects
 {
-    public sealed class DiscordGuildChannel : ChannelMethods
+    public sealed class DiscordGuildChannel : GuildChannelMethods
     {
         public async Task<DiscordChannel> ModifyAsync(string name = null, int? position = null, string topic = null, bool? nsfw = null, int? bitrate = null, int? user_limit = null, IEnumerable<GuildChannelOverwrite> permission_overwrites = null, ulong? parent_id = null)
-            => await base.ModifyGuildChannelAsync(this.Id, name, position, topic, nsfw, bitrate, user_limit, permission_overwrites, parent_id);
+            => await base.ModifyChannelAsync(this.Id, name, position, topic, nsfw, bitrate, user_limit, permission_overwrites, parent_id);
 
         public async Task<DiscordMessage> SendFileAsync(string file_path, string message = null)
             => await base.CreateMessageWithFile(this.Id, file_path, message).ConfigureAwait(false);
