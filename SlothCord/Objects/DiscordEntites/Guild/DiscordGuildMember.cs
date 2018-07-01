@@ -91,6 +91,9 @@ namespace SlothCord.Objects
         [JsonProperty("roles")]
         internal IEnumerable<ulong> RoleIds { get; set; }
 
+        [JsonProperty("guild_id")]
+        public ulong GuildId { get; private set; }
+
         [JsonIgnore]
         public IEnumerable<DiscordGuildRole> Roles { get; internal set; }
 

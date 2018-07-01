@@ -123,6 +123,15 @@ namespace SlothCord.Objects
         public DiscordActivity Activity { get; set; }
     }
 
+    internal struct MemberRemovedPayload
+    {
+        [JsonProperty("user")]
+        public DiscordUser User { get; private set; }
+
+        [JsonProperty("guild_id")]
+        public ulong GuildId { get; private set; }
+    }
+
     internal struct TypingStartPayload
     {
         [JsonProperty("user_id")]

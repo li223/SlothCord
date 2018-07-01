@@ -14,5 +14,6 @@ namespace SlothCord
     public delegate Task UnkownEvent(int code, string payload);
     public delegate Task MessageCreatedEvent(DiscordMessage message);
     public delegate Task MemberAddedEvent(DiscordGuild guild, DiscordGuildMember member);
+    public delegate Task MemberRemovedEvent(DiscordGuild guild, DiscordUser user);
     public delegate Task CommandErroredEvent(Exception exception);
 }

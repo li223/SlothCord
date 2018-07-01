@@ -202,13 +202,19 @@ namespace SlothCord
                         }
                         break;
                     }
-                case DispatchType.MemberAdd:
+                case DispatchType.GuildMemberAdd:
                     {
                         var usr = JsonConvert.DeserializeObject<DiscordGuildMember>(payload);
-                        this.MemberAdded?.Invoke(this.Guilds.FirstOrDefault(x => x.Id == usr.Guild.Id), usr).ConfigureAwait(false);
+                        this.MemberAdded?.Invoke(this.Guilds.FirstOrDefault(x => x.Id == usr.GuildId), usr).ConfigureAwait(false);
                         break;
                     }
-                default:
+                case DispatchType.GuildMemberRemove:
+                    {
+                        var data = JsonConvert.DeserializeObject<MemberRemovedPayload>(payload);
+                        this.MemberRemoved?.Invoke(this.Guilds.FirstOrDefault(x => x.Id == data.GuildId), data.User).ConfigureAwait(false);
+                        break;
+                    }
+                    default:
                     {
                         this.UnknownEventReceived?.Invoke((int)code, payload).ConfigureAwait(false);
                         break;
@@ -230,6 +236,7 @@ namespace SlothCord
         public event UnkownEvent UnknownEventReceived;
         public event MessageCreatedEvent MessageReceived;
         public event MemberAddedEvent MemberAdded;
+        public event MemberRemovedEvent MemberRemoved;
 
         private List<DiscordGuild> _internalGuilds = new List<DiscordGuild>();
         private bool _heartbeat = true;
