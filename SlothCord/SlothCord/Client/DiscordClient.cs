@@ -62,21 +62,23 @@ namespace SlothCord
 
         private void WebSocketClient_Opened(object sender, EventArgs e) => this.SocketOpened?.Invoke().ConfigureAwait(false);
 
-        private async Task SendResumeAsync()
+        private Task SendResumeAsync()
         {
-            var pldata = JsonConvert.SerializeObject(new ResumePayload()
+            var Content = new ResumePayload()
             {
                 SessionId = this._sessionId,
                 Token = this.Token
-            });
-            var Content = JsonConvert.SerializeObject(new GatewayEvent()
+            };
+
+            var pldata = new GatewayEvent()
             {
                 Code = OPCode.Resume,
-                EventPayload = pldata
-            });
+                EventPayload = Content
+            };
+
             var payload = JsonConvert.SerializeObject(Content);
             WebSocketClient.Send(payload);
-            await HeartbeatLoop(this._heartbeatInterval).ConfigureAwait(false);
+            return Task.CompletedTask;
         }
 
         private Task SendIdentifyAsync()
@@ -126,7 +128,24 @@ namespace SlothCord
                             await HeartbeatLoop(hello.HeartbeatInterval).ConfigureAwait(false);
                             this._heartbeatInterval = hello.HeartbeatInterval;
                         }
-                        else { /*resume*/ }
+                        else await SendResumeAsync().ConfigureAwait(false);
+                        break;
+                    }
+                case OPCode.InvalidateSession:
+                    {
+                        _heartbeat = false;
+                        if ((bool)data.EventPayload)
+                        {
+                            await Task.Delay(500).ConfigureAwait(false);
+                            await SendResumeAsync().ConfigureAwait(false);
+                            await HeartbeatLoop(_heartbeatInterval).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            _sessionId = "";
+                            await SendIdentifyAsync().ConfigureAwait(false);
+                            await HeartbeatLoop(_heartbeatInterval).ConfigureAwait(false);
+                        }
                         break;
                     }
                 case OPCode.HeartbeatAck:
@@ -147,7 +166,7 @@ namespace SlothCord
                     }
                 default:
                     {
-                        this.UnknownOPCodeReceived?.Invoke((int)data.Code, data.EventName).ConfigureAwait(false);
+                        this.UnknownEventReceived?.Invoke($"Unknown OpCode: {data.EventName} ({(int)data.Code})", data.EventPayload.ToString()).ConfigureAwait(false);
                         break;
                     }
             }
@@ -214,9 +233,14 @@ namespace SlothCord
                         this.MemberRemoved?.Invoke(this.Guilds.FirstOrDefault(x => x.Id == data.GuildId), data.User).ConfigureAwait(false);
                         break;
                     }
+                case DispatchType.Resumed:
+                    {
+                        this.GatewayResumed?.Invoke().ConfigureAwait(false);
+                        break;
+                    }
                     default:
                     {
-                        this.UnknownEventReceived?.Invoke((int)code, payload).ConfigureAwait(false);
+                        this.UnknownEventReceived?.Invoke($"Unknown Dispatch Type: {(int)code}", payload).ConfigureAwait(false);
                         break;
                     }
             }
@@ -232,11 +256,11 @@ namespace SlothCord
         public event SocketClosedEvent SocketClosed;
         public event GuildsDownloadedEvent GuildsDownloaded;
         public event GuildCreatedEvent GuildCreated;
-        public event UnkownOpCodeEvent UnknownOPCodeReceived;
         public event UnkownEvent UnknownEventReceived;
         public event MessageCreatedEvent MessageReceived;
         public event MemberAddedEvent MemberAdded;
         public event MemberRemovedEvent MemberRemoved;
+        public event ResumedEvent GatewayResumed;
 
         private List<DiscordGuild> _internalGuilds = new List<DiscordGuild>();
         private bool _heartbeat = true;

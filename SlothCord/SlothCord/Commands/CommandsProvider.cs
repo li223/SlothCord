@@ -106,26 +106,39 @@ namespace SlothCord.Commands
                 var passingargs = new List<object>();
                 if (IsSubCommand) Args.RemoveRange(0, 2);
                 else Args.RemoveAt(0);
-                if (Target.MethodParams[0].ParameterType == typeof(SlothContext))
+
+                for (var i = 0; i < Target.MethodParams.Count; i++)
                 {
-                    var guild = client.Guilds.FirstOrDefault(x => x.Channels.Any(a => a.Id == msg.ChannelId));
-                    var channel = guild?.Channels.FirstOrDefault(x => x.Id == msg.ChannelId);
-                    passingargs.Add(new SlothContext()
+                    var att = Target.MethodParams[i].CustomAttributes.FirstOrDefault(x => x.AttributeType == typeof(RemainingStringAttribute));
+
+                    if (att != null)
                     {
-                        GuildChannel = channel,
-                        Channel = client.PrivateChannels.FirstOrDefault(x => x.Id == msg.ChannelId),
-                        InvokingMember = guild.Members.FirstOrDefault(x => x.UserData.Id == msg.UserAuthor.Id),
-                        Guild = guild,
-                        InvokingUser = msg.UserAuthor,
-                        Message = msg,
-                        Provider = this,
-                        Services = this.Services
-                    });
-                }
-                for (var i = 0; i < Args.Count; i++)
-                {
+                        var sb = new StringBuilder();
+                        for (var a = 0; a < Args.Count; a++)
+                            sb.Append($" {Args[a]}");
+                        passingargs.Add(sb.ToString().Remove(0, 1));
+                        break;
+                    }
+
                     object arg = null;
-                    if (Regex.IsMatch(Args[i], @"^(<@!?[\d]+>)$"))
+                    if (Target.MethodParams[i].ParameterType == typeof(SlothContext))
+                    {
+                        var guild = client.Guilds.FirstOrDefault(x => x.Channels.Any(a => a.Id == msg.ChannelId));
+                        var channel = guild?.Channels.FirstOrDefault(x => x.Id == msg.ChannelId);
+                        arg = new SlothContext()
+                        {
+                            GuildChannel = channel,
+                            Channel = client.PrivateChannels.FirstOrDefault(x => x.Id == msg.ChannelId),
+                            InvokingMember = guild.Members.FirstOrDefault(x => x.UserData.Id == msg.UserAuthor.Id),
+                            Guild = guild,
+                            InvokingUser = msg.UserAuthor,
+                            Message = msg,
+                            Provider = this,
+                            Services = this.Services
+                        };
+                    }
+
+                    else if (Regex.IsMatch(Args[i], @"^(<@!?[\d]+>)$"))
                     {
                         var id = ulong.Parse(Args[i].Remove(0, 2).Replace("!", "").Replace(">", ""));
                         if (Target.MethodParams[i].ParameterType == typeof(DiscordGuildMember))
@@ -137,6 +150,7 @@ namespace SlothCord.Commands
                         else if (Target.MethodParams[i].ParameterType == typeof(DiscordUser)) arg = await client.GetUserAsync(id).ConfigureAwait(false);
                         else arg = Convert.ChangeType(Args[i], Target.MethodParams[i].ParameterType);
                     }
+
                     else if (ulong.TryParse(Args[i], out ulong res))
                     {
                         if (Target.MethodParams[i].ParameterType == typeof(DiscordGuildMember))
@@ -148,11 +162,16 @@ namespace SlothCord.Commands
                         else if (Target.MethodParams[i].ParameterType == typeof(DiscordUser)) arg = await client.GetUserAsync(res).ConfigureAwait(false);
                         else arg = Convert.ChangeType(Args[i], Target.MethodParams[i].ParameterType);
                     }
+
                     else arg = Convert.ChangeType(Args[i], Target.MethodParams[i].ParameterType);
+
                     passingargs.Add(arg);
+                    if(Args.IndexOf(arg.ToString()) > -1)
+                        Args.RemoveAt(Args.IndexOf(arg.ToString()));
                 }
-                if (passingargs.Count == 0)
-                    Target.Method.Invoke(Target.ClassInstance, passingargs.ToArray());
+
+                if (passingargs.Count == 0) Target.Method.Invoke(Target.ClassInstance, passingargs.ToArray());
+
                 else Target.Method.Invoke(Target.ClassInstance, passingargs.ToArray());
             }
             catch (Exception ex)

@@ -9,6 +9,7 @@ namespace SlothCord.Objects
         Orange = 0xE86800,
         White = 0xFFFFFF,
         Purple = 0x952097,
+        LighterPurple = 0x822d68,
         Lilac = 0xD58BFF,
         Gray = 0x847671,
         Red = 0xE32B15,

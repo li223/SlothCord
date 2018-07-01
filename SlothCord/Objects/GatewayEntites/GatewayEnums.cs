@@ -61,7 +61,8 @@ namespace SlothCord.Objects
         UserUpdate = 28,
         VoicStateUpdate = 29,
         VoiceServerUpdate = 30,
-        WebhookUpdate = 31
+        WebhookUpdate = 31,
+        Resumed = 32
     }
 
     public enum CloseCode
