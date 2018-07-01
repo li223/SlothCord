@@ -3,6 +3,7 @@ Note: The master branch is fucntional (mostly) but the library is being rewritte
 
 # Branches
 Master - This branch is broken to high hell
+
 Rewrite - Currently rewriting the lib to not be as bad. Recommend you use this after I sort out Internal Ratelimiting
 
 # How do use lib?
