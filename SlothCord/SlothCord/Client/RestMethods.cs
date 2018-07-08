@@ -66,6 +66,26 @@ namespace SlothCord
 
     public class MemberMethods : ApiBase
     {
+        internal async Task PutRoleAsync(ulong guild_id, ulong user_id, ulong role_id)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Put, new Uri($"{_baseAddress}/guilds/{guild_id}/members/{user_id}/roles/{role_id}"));
+            var response = await _httpClient.SendRequestAsync(request, RequestType.Other).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
+                    await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), request).ConfigureAwait(false);
+        }
+
+        internal async Task DeleteRoleAsync(ulong guild_id, ulong user_id, ulong role_id)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Delete, new Uri($"{_baseAddress}/guilds/{guild_id}/members/{user_id}/roles/{role_id}"));
+            var response = await _httpClient.SendRequestAsync(request, RequestType.Other).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
+                    await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), request).ConfigureAwait(false);
+        }
+
         internal async Task ModifyAsync(ulong guild_id, ulong member_id, string nickname, IEnumerable<DiscordGuildRole> roles, bool? is_muted, bool? is_deaf, ulong? channel_id)
         {
             var jsondata = JsonConvert.SerializeObject(new MemberModifyPayload()
@@ -441,6 +461,20 @@ namespace SlothCord
             if (!response.IsSuccessStatusCode)
                 if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
                     await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg).ConfigureAwait(false);
+        }
+
+        internal async Task<IEnumerable<GuildBan>> GetGuildBansAsync(ulong guild_id)
+        {
+            var msg = new HttpRequestMessage(HttpMethod.Get, new Uri($"{_baseAddress}/guilds/{guild_id}/bans"));
+            var response = await _httpClient.SendRequestAsync(msg, RequestType.Other).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<IEnumerable<GuildBan>>(content);
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
+                    return JsonConvert.DeserializeObject<IEnumerable<GuildBan>>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg).ConfigureAwait(false));
+                else return null;
+            }
         }
 
         internal async Task CreateBanAsync(ulong guild_id, ulong member_id, int clear_days = 0, string reason = null)

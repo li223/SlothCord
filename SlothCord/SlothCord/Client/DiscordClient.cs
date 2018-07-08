@@ -202,7 +202,7 @@ namespace SlothCord
                         foreach(var member in guild.Members)
                         {
                             member.Guild = guild;
-                            member.Roles = guild.Roles.Where(x => member.RoleIds.Any(a => a == x.Id)) as IEnumerable<DiscordGuildRole>;
+                            member.Roles = guild.Roles.Where(x => member.RoleIds.Any(a => a == x.Value.Id)) as IReadOnlyList<DiscordGuildRole?>;
                         }
                         this.GuildCreated?.Invoke(guild).ConfigureAwait(false);
                         if (this._guildsToDownload == this._downloadedGuilds)

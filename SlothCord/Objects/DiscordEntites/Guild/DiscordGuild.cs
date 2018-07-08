@@ -8,6 +8,9 @@ namespace SlothCord.Objects
 {
     public sealed class DiscordGuild : GuildMethods
     {
+        public async Task<IEnumerable<GuildBan>> GetBansAsync()
+            => await base.GetGuildBansAsync(this.Id).ConfigureAwait(false);
+
         public async Task<IEnumerable<DiscordGuildInvite>> GetInvitesAsync()
             => await base.GetGuildInvitesAsync(this.Id).ConfigureAwait(false);
 
@@ -30,13 +33,13 @@ namespace SlothCord.Objects
             => await base.DeleteGuildBanAsync(this.Id, id).ConfigureAwait(false);
 
         public DiscordGuildMember GetMember(ulong id)
-            => this.Members.FirstOrDefault(x => x.UserData.Id == id);
+            => this.Members?.FirstOrDefault(x => x.UserData.Id == id);
 
         public DiscordGuildChannel GetChannel(ulong id)
-            => this.Channels.FirstOrDefault(x => x.Id == id);
+            => this.Channels?.FirstOrDefault(x => x.Id == id);
 
-        public DiscordGuildRole GetRole(ulong id)
-            => this.Roles.FirstOrDefault(x => x.Id == id);
+        public DiscordGuildRole? GetRole(ulong id)
+            => this.Roles?.FirstOrDefault(x => x.Value.Id == id);
 
         public async Task<GuildAuditLogData?> GetAuditLogsAsync(ulong? user_id = null, AuditActionType? action_type = null, ulong? before = null, int? limit = null)
             => await base.ListAuditLogsAsync(this.Id, user_id, action_type, before, limit).ConfigureAwait(false);
@@ -58,7 +61,10 @@ namespace SlothCord.Objects
         {
             var members = await base.ListGuildMembersAsync(this.Id, limit, around).ConfigureAwait(false);
             foreach (var member in members)
+            {
                 member.Guild = this;
+                member.Roles = this.Roles.Where(x => member.RoleIds.Any(a => a == x.Value.Id)) as IReadOnlyList<DiscordGuildRole?>;
+            }
             return members;
         }
 
@@ -75,7 +81,7 @@ namespace SlothCord.Objects
         public string IconUrl { get => $"https://cdn.discordapp.com/icons/{this.Id}/{this.Icon}.png"; }
 
         [JsonIgnore]
-        public DiscordGuildMember Owner { get => this.Members.First(x => x.UserData.Id == this.OwnerId); }
+        public DiscordGuildMember Owner { get => this.Members.FirstOrDefault(x => x.UserData.Id == this.OwnerId); }
 
         [JsonIgnore]
         public DateTimeOffset CreatedAt { get; internal set; }
@@ -84,13 +90,13 @@ namespace SlothCord.Objects
         public string Name { get; private set; }
 
         [JsonProperty("channels")]
-        public IEnumerable<DiscordGuildChannel> Channels { get; private set; }
+        public IReadOnlyList<DiscordGuildChannel> Channels { get; private set; }
 
         [JsonProperty("large")]
         public bool IsLarge { get; private set; }
 
         [JsonProperty("voice_states")]
-        public IEnumerable<UserVoiceState> VoiceStates { get; private set; }
+        public IReadOnlyList<UserVoiceState> VoiceStates { get; private set; }
 
         [JsonProperty("system_channel_id")]
         public ulong? DefaultChannelId { get; private set; }
@@ -144,19 +150,19 @@ namespace SlothCord.Objects
         public ulong? WidgetChannelId { get; private set; }
 
         [JsonProperty("roles")]
-        public IEnumerable<DiscordGuildRole> Roles { get; private set; }
+        public IReadOnlyList<DiscordGuildRole?> Roles { get; private set; }
 
         [JsonProperty("emojis")]
-        public IEnumerable<DiscordGuildEmoji> Emojis { get; private set; }
+        public IReadOnlyList<DiscordGuildEmoji?> Emojis { get; private set; }
 
         [JsonProperty("features")]
-        public IEnumerable<string> Features { get; private set; }
+        public IReadOnlyList<string> Features { get; private set; }
 
         [JsonProperty("presences")]
-        public IEnumerable<DiscordPresence?> Presences { get; private set; }
+        public IReadOnlyList<DiscordPresence?> Presences { get; private set; }
 
         [JsonProperty("members")]
-        public IEnumerable<DiscordGuildMember> Members { get; private set; }
+        public IReadOnlyList<DiscordGuildMember> Members { get; private set; }
 
         [JsonProperty("unavailable")]
         public bool IsUnavailable { get; private set; }
