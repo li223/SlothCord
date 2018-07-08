@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System;
 using System.Linq;
 using System.Text;
@@ -16,6 +16,25 @@ namespace SlothCord.Objects
             var channel = await base.CreateUserDmChannelAsync(this.Id).ConfigureAwait(false);
             return await channel.SendMessageAsync(content, false, embed).ConfigureAwait(false);
         }
+
+        [JsonIgnore]
+        public string AvatarUrl { get => $"https://cdn.discordapp.com/avatars/{this.Id}/{this.Avatar}.png"; }
+
+        [JsonIgnore]
+        public DateTimeOffset CreatedAt
+        {
+            get
+            {
+                var bin = this.Id.ToString("2");
+                var sb = new StringBuilder();
+                bin.Split().Take(64).Select(x => sb.Append(x));
+                var de = (int.Parse(sb.ToString())) + 1420070400000;
+                return DateTimeOffset.FromUnixTimeMilliseconds(de);
+            }
+        }
+
+        [JsonIgnore]
+        public string Mention { get => $"<@{this.Id}>"; }
 
         [JsonProperty("status")]
         public StatusType Status { get; internal set; }
@@ -44,26 +63,7 @@ namespace SlothCord.Objects
         [JsonProperty("email")]
         public string Email { get; private set; }
 
-        [JsonIgnore]
-        public string AvatarUrl { get => $"https://cdn.discordapp.com/avatars/{this.Id}/{this.Avatar}.png"; }
-
         [JsonProperty("avatar")]
         private string Avatar { get; set; }
-
-        [JsonIgnore]
-        public DateTimeOffset CreatedAt
-        {
-            get
-            {
-                var bin = this.Id.ToString("2");
-                var sb = new StringBuilder();
-                bin.Split().Take(64).Select(x => sb.Append(x));
-                var de = (int.Parse(sb.ToString())) + 1420070400000;
-                return DateTimeOffset.FromUnixTimeMilliseconds(de);
-            }
-        }
-
-        [JsonIgnore]
-        public string Mention { get => $"<@{this.Id}>"; }
     }
 }

@@ -7,8 +7,7 @@ using System.Threading.Tasks;
 
 namespace SlothCord.Objects
 {
-
-    public sealed class DiscordMessage : MessageMethods
+    public class DiscordMessage : MessageMethods
     {
         public async Task<DiscordMessage> EditAsync(string content = null, DiscordEmbed embed = null)
         {
@@ -17,17 +16,17 @@ namespace SlothCord.Objects
             return await base.EditDiscordMessageAsync((ulong)this.ChannelId, this.Id, content, embed).ConfigureAwait(false);
         }
 
-        public Task DeleteAsync()
-            => base.DeleteMessageAsync((ulong)this.ChannelId, this.Id);
-
+        public async Task DeleteAsync()
+            => await base.DeleteMessageAsync((ulong)this.ChannelId, this.Id).ConfigureAwait(false);
+        
         [JsonProperty("id")]
         public ulong Id { get; private set; }
 
         [JsonProperty("channel_id")]
-        public ulong? ChannelId { get; private set; } = 0;
+        public ulong? ChannelId { get; private set; }
 
         [JsonProperty("author")]
-        public DiscordUser Author { get; private set; }
+        public DiscordUser UserAuthor { get; private set; }
 
         [JsonProperty("content")]
         public string Content { get; private set; }
@@ -45,22 +44,16 @@ namespace SlothCord.Objects
         public bool MentionsEveryone { get; private set; }
 
         [JsonProperty("mentions")]
-        public IReadOnlyList<DiscordUser> Mentions { get; private set; }
-
-        [JsonProperty("mention_roles")]
-        private IReadOnlyList<ulong> MentionRoleIds { get; set; }
-
-        [JsonIgnore]
-        public IReadOnlyList<DiscordRole> RoleMentions { get; private set; }
+        public IEnumerable<DiscordUser> UserMentions { get; private set; }
 
         [JsonProperty("attachments")]
-        public IReadOnlyList<DiscordAttachment> Attachments { get; private set; }
+        public IEnumerable<DiscordAttachment> Attachments { get; private set; }
 
         [JsonProperty("embeds")]
-        public IReadOnlyList<DiscordEmbed> Embeds { get; private set; }
+        public IEnumerable<DiscordEmbed> Embeds { get; private set; }
 
         [JsonProperty("reactions")]
-        public IReadOnlyList<DiscordReaction> Reactions { get; private set; }
+        public IEnumerable<DiscordGuildEmoji> Reactions { get; private set; }
 
         [JsonProperty("nonce")]
         public ulong? Nonce { get; private set; }
@@ -68,16 +61,13 @@ namespace SlothCord.Objects
         [JsonProperty("pinned")]
         public bool IsPinned { get; private set; }
 
-        [JsonProperty("webhook_id")]
-        public ulong? WebhookId { get; private set; }
-
         [JsonProperty("type")]
         public MessageType Type { get; private set; }
 
         [JsonProperty("activity")]
-        public DiscordActivity Activity { get; private set; }
+        public DiscordMessageActivity Activity { get; private set; }
 
         [JsonProperty("application")]
-        public DiscordApplication Application { get; private set; }
+        public DiscordMessageApplication Application { get; private set; }
     }
 }

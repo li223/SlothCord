@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace SlothCord.Objects
 {
@@ -72,7 +73,7 @@ namespace SlothCord.Objects
         public string Url { get; set; }
 
         [JsonProperty("timestamp", NullValueHandling = NullValueHandling.Ignore)]
-        public DateTimeOffset? Timestamp { get; set; } = null;
+        public DateTimeOffset? Timestamp { get; set; }
 
         [JsonProperty("color", NullValueHandling = NullValueHandling.Ignore)]
         public int IntColor { get; set; }
@@ -100,6 +101,7 @@ namespace SlothCord.Objects
             set { this.IntColor = (int)value; }
         }
 #endif
+
         [JsonProperty("footer", NullValueHandling = NullValueHandling.Ignore)]
         public EmbedFooter Footer { get; set; }
 
@@ -119,13 +121,13 @@ namespace SlothCord.Objects
         public EmbedAuthor Author { get; set; }
 
         [JsonProperty("fields", NullValueHandling = NullValueHandling.Ignore)]
-        public IReadOnlyList<EmbedField> Fields { get => this.PrivateEmbedFields; private set { this.Fields = PrivateEmbedFields; } }
+        public IEnumerable<EmbedField> Fields { get => this.PrivateEmbedFields; private set { this.Fields = PrivateEmbedFields; } }
 
         [JsonIgnore]
         private List<EmbedField> PrivateEmbedFields = new List<EmbedField>();
     }
 
-    public sealed class EmbedFooter
+    public struct EmbedFooter
     {
         [JsonProperty("text")]
         public string Text { get; set; }
@@ -137,7 +139,7 @@ namespace SlothCord.Objects
         public string ProxyIconUrl { get; set; }
     }
 
-    public sealed class EmbedImage
+    public struct EmbedImage
     {
         [JsonProperty("url")]
         public string Url { get; set; }
@@ -152,7 +154,7 @@ namespace SlothCord.Objects
         public int Width { get; private set; }
     }
 
-    public sealed class EmbedThumbnail
+    public struct EmbedThumbnail
     {
         [JsonProperty("url")]
         public string Url { get; set; }
@@ -167,7 +169,7 @@ namespace SlothCord.Objects
         public int Width { get; private set; }
     }
 
-    public sealed class EmbedVideo
+    public struct EmbedVideo
     {
         [JsonProperty("url")]
         public string Url { get; private set; }
@@ -179,7 +181,7 @@ namespace SlothCord.Objects
         public int Width { get; private set; }
     }
 
-    public sealed class EmbedProvider
+    public struct EmbedProvider
     {
         [JsonProperty("url")]
         public string Url { get; private set; }
@@ -188,7 +190,7 @@ namespace SlothCord.Objects
         public string Name { get; private set; }
     }
 
-    public sealed class EmbedAuthor
+    public struct EmbedAuthor
     {
         [JsonProperty("url")]
         public string Url { get; set; }
@@ -215,7 +217,7 @@ namespace SlothCord.Objects
         public bool IsInline { get; set; }
     }
 
-    public sealed class GuildEmbed
+    public struct GuildEmbed
     {
         [JsonProperty("enabled")]
         public bool IsEnabled { get; internal set; }
