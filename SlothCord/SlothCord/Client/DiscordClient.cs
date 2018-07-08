@@ -222,13 +222,21 @@ namespace SlothCord
                             var args = await CommandsProvider.ParseArguementsAsync(msg).ConfigureAwait(false);
                             Command? cmd;
                             bool sub = false;
-                            cmd = CommandsProvider.CommandsList.FirstOrDefault(x => x?.CommandName == args[0]);
+                            cmd = CommandsProvider.CommandsList.FirstOrDefault(x => (x?.CommandName == args[0]) || (x?.Aliases.FirstOrDefault(a => a == args[0]) != null));
                             if (cmd == null)
                             {
-                                cmd = CommandsProvider.GroupCommandsList.FirstOrDefault(x => x?.GroupName == args[0])?.SubCommands.FirstOrDefault(x => x.CommandName == args[1]);
-                                sub = true;
+                                var group = CommandsProvider.GroupCommandsList.FirstOrDefault(x => (x?.GroupName == args[0]) || (x?.Aliases.FirstOrDefault(a => a == args[0]) != null));
+                                cmd = group?.SubCommands.FirstOrDefault(x => (x.CommandName == args[1]) || (x.Aliases.FirstOrDefault(a => a == args[1]) != null));
+                                if (cmd == null && group.Value.ExecuteMethod != null)
+                                    cmd = new Command()
+                                    {
+                                        Method = group.Value.ExecuteMethod,
+                                        MethodParams = group.Value.ExecuteMethod.GetParameters()
+                                    };
+                                else if (cmd != null) sub = true;
+                                else break;
                             }
-                            if (cmd != null) await CommandsProvider.ExecuteCommandAsync(args, (Command)cmd, sub, this, msg);
+                            await CommandsProvider.ExecuteCommandAsync(args, (Command)cmd, sub, this, msg);
                         }
                         break;
                     }

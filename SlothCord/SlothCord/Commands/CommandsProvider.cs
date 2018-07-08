@@ -30,6 +30,7 @@ namespace SlothCord.Commands
                 Method = x,
                 MethodParams = x.GetParameters(),
                 CommandName = x.GetCustomAttribute<CommandAttribute>().CommandName,
+                Aliases = x.GetCustomAttribute<AliasesAttribute>().Aliases,
                 ParentCommandName = null
             } as Command?));
 
@@ -45,6 +46,7 @@ namespace SlothCord.Commands
                     {
                         ClassInstance = groups[count],
                         Method = CommandsList[i].Value.Method,
+                        Aliases = CommandsList[i].Value.Method.GetCustomAttribute<AliasesAttribute>().Aliases,
                         CommandName = CommandsList[i].Value.Method.GetCustomAttribute<CommandAttribute>().CommandName,
                         ParentCommandName = groups[count].GetCustomAttribute<GroupAttribute>().GroupName
                     });
@@ -52,8 +54,10 @@ namespace SlothCord.Commands
 
                 GroupCommandsList.Add(new CommandGroup()
                 {
-                    GroupName = CommandsList[count].Value.Method.GetCustomAttribute<GroupAttribute>().GroupName,
-                    SubCommands = subcmds
+                    GroupName = groups[count].GetCustomAttribute<GroupAttribute>().GroupName,
+                    Aliases = groups[count].GetCustomAttribute<AliasesAttribute>().Aliases,
+                    SubCommands = subcmds,
+                    ExecuteMethod = subcmds.FirstOrDefault(x => x.Method.Name == "ExecuteGroupAsync").Method
                 });
             }
 
@@ -185,6 +189,7 @@ namespace SlothCord.Commands
     {
         public string ParentCommandName { get; internal set; }
         public string CommandName { get; internal set; }
+        public string[] Aliases { get; internal set; }
         public MethodInfo Method { get; internal set; }
         public IReadOnlyList<ParameterInfo> MethodParams { get; internal set; }
         public object ClassInstance { get; internal set; }
@@ -193,6 +198,8 @@ namespace SlothCord.Commands
     public struct CommandGroup
     {
         public string GroupName { get; internal set; }
+        public string[] Aliases { get; internal set; }
+        public MethodInfo ExecuteMethod { get; internal set; }
         public List<Command> SubCommands { get; internal set; }
     }
 
@@ -207,10 +214,10 @@ namespace SlothCord.Commands
         public CommandsProvider Provider { get; internal set; }
         public IServiceProvider Services { get; internal set; }
 
-        public async Task ReplyAsync(string message = null, bool istts = false, DiscordEmbed embed = null)
+        public async Task<DiscordMessage> ReplyAsync(string message = null, bool istts = false, DiscordEmbed embed = null)
         {
             var id = (GuildChannel != null) ? GuildChannel.Id : Channel.Id;
-            await base.CreateMessageAsync(id, message, istts, embed).ConfigureAwait(false);
+            return await base.CreateMessageAsync(id, message, istts, embed).ConfigureAwait(false);
         }
     }
     public static class Extensions

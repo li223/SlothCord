@@ -31,10 +31,10 @@ namespace SlothCord.Objects
             => await base.DeleteChannelMessageAsync(this.Id, message.Id).ConfigureAwait(false);
 
         public async Task BulkDeleteAsync(IEnumerable<ulong> ids)
-            => await base.BulkDeleteGuildMessagesAsync(this.GuildId, this.Id, ids).ConfigureAwait(false);
+            => await base.BulkDeleteMessagesAsync(this.Id, ids.ToArray()).ConfigureAwait(false);
 
         public async Task BulkDeleteAsync(IEnumerable<DiscordMessage> msgs)
-            => await base.BulkDeleteGuildMessagesAsync(this.GuildId, this.Id, msgs.Select(x => x.Id) as IEnumerable<ulong>).ConfigureAwait(false);
+            => await base.BulkDeleteMessagesAsync(this.Id, (msgs.Select(x => x.Id).ToArray())).ConfigureAwait(false);
 
         public async Task<DiscordMessage> SendMessageAsync(string message = null, bool is_tts = false, DiscordEmbed embed = null)
             => await base.CreateMessageAsync(this.Id, message, is_tts, embed).ConfigureAwait(false);

@@ -1,9 +1,17 @@
 ﻿using System;
-using System.Reflection;
-using System.Threading.Tasks;
 
 namespace SlothCord.Commands
 {
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    public sealed class AliasesAttribute : Attribute
+    {
+        internal string[] Aliases { get; set; }
+        public AliasesAttribute(params string[] Aliases)
+        {
+            this.Aliases = Aliases;
+        }
+    }
+
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     public sealed class CommandAttribute : Attribute
     {

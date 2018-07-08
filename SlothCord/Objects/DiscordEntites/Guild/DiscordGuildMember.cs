@@ -30,11 +30,11 @@ namespace SlothCord.Objects
         public async Task AddRoleAsync(ulong role_id)
             => await base.PutRoleAsync(this.GuildId, this.UserData.Id, role_id).ConfigureAwait(false);
 
-        public async Task RemoveRoleAsync(DiscordGuildRole role)
-            => await base.DeleteRoleAsync(this.GuildId, this.UserData.Id, role.Id).ConfigureAwait(false);
+        public async Task RemoveRoleAsync(DiscordGuildRole? role)
+            => await base.DeleteRoleAsync(this.GuildId, this.UserData.Id, role.Value.Id).ConfigureAwait(false);
 
-        public async Task AddRoleAsync(DiscordGuildRole role)
-             => await base.PutRoleAsync(this.GuildId, this.UserData.Id, role.Id).ConfigureAwait(false);
+        public async Task AddRoleAsync(DiscordGuildRole? role)
+             => await base.PutRoleAsync(this.GuildId, this.UserData.Id, role.Value.Id).ConfigureAwait(false);
 
         public async Task<DiscordMessage> SendMessageAsync(string content = null, DiscordEmbed embed = null)
         {

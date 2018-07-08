@@ -214,6 +214,45 @@ namespace SlothCord
             else return null;
 
         }
+
+        internal async Task BulkDeleteMessagesAsync(ulong channel_id, ulong[] message_ids)
+        {
+            var msg = new HttpRequestMessage(HttpMethod.Post, new Uri($"{_baseAddress}/channels{channel_id}/messages/bulk-delete"))
+            {
+                Content = new StringContent(JsonConvert.SerializeObject(message_ids))
+            };
+
+            var response = await _httpClient.SendRequestAsync(msg, RequestType.DeleteMessage).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+                if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
+                    await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg).ConfigureAwait(false);
+
+        }
+
+        internal async Task<DiscordChannel> ModifyChannelAsync(ulong channel_id, string name = null, int? position = null, string topic = null, bool? nsfw = null, int? bitrate = null, int? user_limit = null, IEnumerable<GuildChannelOverwrite> permission_overwrites = null, ulong? parent_id = null)
+        {
+            var msg = new HttpRequestMessage(new HttpMethod("PATCH"), new Uri($"{_baseAddress}/channels/{channel_id}"))
+            {
+                Content = new StringContent(JsonConvert.SerializeObject(new ChannelModifyPayload()
+                {
+                    Name = name,
+                    Position = position,
+                    Topic = topic,
+                    IsNsfw = nsfw,
+                    Bitrate = bitrate,
+                    UserLimit = user_limit,
+                    PermissionOverwrites = permission_overwrites,
+                    ParentId = parent_id
+                }))
+            };
+            var response = await _httpClient.SendRequestAsync(msg, RequestType.Other).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            if (response.IsSuccessStatusCode) return JsonConvert.DeserializeObject<DiscordChannel>(content);
+            else if (!string.IsNullOrWhiteSpace(response.Headers.RetryAfter?.ToString()))
+                return JsonConvert.DeserializeObject<DiscordChannel>(await RetryAsync(int.Parse(response.Headers.RetryAfter.ToString()), msg).ConfigureAwait(false));
+            else return null;
+        }
     }
 
     public class GuildChannelMethods : ApiBase
@@ -276,17 +315,11 @@ namespace SlothCord
             else return JsonConvert.DeserializeObject<IEnumerable<DiscordGuildInvite>>(content);
         }
 
-        internal async Task BulkDeleteGuildMessagesAsync(ulong? guild_id, ulong channel_id, IEnumerable<ulong> message_ids)
+        internal async Task BulkDeleteMessagesAsync(ulong channel_id, ulong[] message_ids)
         {
-            if (guild_id == null) return;
-            var ids = new BulkDeletePayload()
-            {
-                Messages = message_ids.ToArray()
-            };
-
             var msg = new HttpRequestMessage(HttpMethod.Post, new Uri($"{_baseAddress}/channels{channel_id}/messages/bulk-delete"))
             {
-                Content = new StringContent(JsonConvert.SerializeObject(ids))
+                Content = new StringContent(JsonConvert.SerializeObject(message_ids))
             };
 
             var response = await _httpClient.SendRequestAsync(msg, RequestType.DeleteMessage).ConfigureAwait(false);
