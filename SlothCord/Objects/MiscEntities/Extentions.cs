@@ -1,4 +1,7 @@
+using SlothCord.Commands;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -6,54 +9,89 @@ namespace SlothCord.Objects
 {
     public static class Extensions
     {
-        private static int _ratelimit { get; set; }
-        private static DispatchType _prevType { get; set; }
-        private static DateTimeOffset _lastRequestStamp { get; set; }
+        private static List<RateLimitObject> RateLimits = new List<RateLimitObject>()
+        {
+            new RateLimitObject()
+            {
+                CurrentLimit = 5,
+                InitalLimit = 5,
+                Time = 5000,
+                RequestType = RequestType.PostMessage,
+                LastRequestStamp = DateTimeOffset.Now,
+                Type = "channel"
+            },
+            new RateLimitObject()
+            {
+                CurrentLimit = 5,
+                InitalLimit = 5,
+                Time = 1000,
+                RequestType = RequestType.DeleteMessage,
+                LastRequestStamp = DateTimeOffset.Now,
+                Type = "channel"
+            },
+            new RateLimitObject()
+            {
+                CurrentLimit = 1,
+                InitalLimit = 1,
+                Time = 250,
+                RequestType = RequestType.DeletePutReaction,
+                LastRequestStamp = DateTimeOffset.Now,
+                Type = "channel"
+            },
+            new RateLimitObject()
+            {
+                CurrentLimit = 10,
+                InitalLimit = 10,
+                Time = 10000,
+                RequestType = RequestType.PatchMember,
+                LastRequestStamp = DateTimeOffset.Now,
+                Type = "guild"
+            },
+            new RateLimitObject()
+            {
+                CurrentLimit = 1,
+                InitalLimit = 1,
+                Time = 1000,
+                RequestType = RequestType.PatchMemberNick,
+                LastRequestStamp = DateTimeOffset.Now,
+                Type = "guild"
+            },
+            new RateLimitObject()
+            {
+                CurrentLimit = 2,
+                InitalLimit = 2,
+                Time = 3600000,
+                RequestType = RequestType.PatchUsername,
+                LastRequestStamp = DateTimeOffset.Now,
+                Type = "account"
+            },
+            new RateLimitObject()
+            {
+                CurrentLimit = 50,
+                InitalLimit = 50,
+                Time = 1000,
+                RequestType = RequestType.Other,
+                LastRequestStamp = DateTimeOffset.Now,
+                Type = "account"
+            }
+        };
 
-        public static async Task<HttpResponseMessage> SendRequestAsync(this HttpClient http, HttpRequestMessage msg, DispatchType type)
+        public static async Task<HttpResponseMessage> SendRequestAsync(this HttpClient http, HttpRequestMessage msg, RequestType type)
         {
             HttpResponseMessage httpResponse = null;
-            switch (type)
+            var obj = RateLimits.FirstOrDefault(x => x.RequestType == type);
+            var timediff = DateTimeOffset.Now - obj.LastRequestStamp;
+            if (timediff.Milliseconds > obj.Time)
             {
-                case DispatchType.MessageCreate:
-                    {
-                        if (_prevType != DispatchType.MessageCreate)
-                        {
-                            _prevType = DispatchType.MessageCreate;
-                            _ratelimit = 5;
-                        }
-                        else _ratelimit -= 1;
-                        var timediff = DateTimeOffset.Now - _lastRequestStamp;
-                        if (timediff.Seconds > 5)
-                        {
-                            _lastRequestStamp = DateTime.Now;
-                            _ratelimit = 5;
-                        }
-                        if (_ratelimit <= -1 && timediff.Seconds <= 5)
-                            httpResponse = await InternalWaitAsync(http, 5000, msg).ConfigureAwait(false);
-                        else httpResponse = await http.SendAsync(msg).ConfigureAwait(false);
-                        break;
-                    }
-
-                case DispatchType.MessageDelete:
-                    {
-                        if (_prevType != DispatchType.MessageDelete)
-                        {
-                            _prevType = DispatchType.MessageDelete;
-                            _ratelimit = 5;
-                        }
-                        else _ratelimit -= 1;
-                        var timediff = DateTimeOffset.Now - _lastRequestStamp;
-                        if (timediff.Seconds > 1)
-                        {
-                            _lastRequestStamp = DateTime.Now;
-                            _ratelimit = 5;
-                        }
-                        if (_ratelimit <= -1 && timediff.Seconds <= 1)
-                            httpResponse = await InternalWaitAsync(http, 1000, msg).ConfigureAwait(false);
-                        else httpResponse = await http.SendAsync(msg).ConfigureAwait(false);
-                        break;
-                    }
+                obj.LastRequestStamp = DateTime.Now;
+                obj.CurrentLimit = obj.InitalLimit;
+            }
+            if (obj.CurrentLimit <= -1 && timediff.Milliseconds <= obj.Time)
+                httpResponse = await InternalWaitAsync(http, obj.Time, msg).ConfigureAwait(false);
+            else
+            {
+                obj.CurrentLimit -= 1;
+                httpResponse = await http.SendAsync(msg).ConfigureAwait(false);
             }
             return httpResponse;
         }
@@ -67,5 +105,26 @@ namespace SlothCord.Objects
             var response = await client.SendAsync(msg).ConfigureAwait(false);
             return response;
         }
+    }
+
+    public struct RateLimitObject
+    {
+        public int InitalLimit { get; set; }
+        public int CurrentLimit { get; set; }
+        public int Time { get; set; }
+        public string Type { get; set; }
+        public RequestType RequestType { get; set; }
+        public DateTimeOffset LastRequestStamp { get; set; }
+    }
+
+    public enum RequestType
+    {
+        PostMessage = 0, 
+        DeleteMessage = 1,
+        DeletePutReaction = 2,
+        PatchMember = 3, 
+        PatchMemberNick = 4,
+        PatchUsername = 5,
+        Other = 6,
     }
 }

@@ -122,7 +122,7 @@ namespace SlothCord
                 case OPCode.Hello:
                     {
                         var hello = JsonConvert.DeserializeObject<GatewayHello>(data.EventPayload.ToString());
-                        if (_sessionId == "")
+                        if (string.IsNullOrWhiteSpace(_sessionId))
                         {
                             await SendIdentifyAsync().ConfigureAwait(false);
                             await HeartbeatLoop(hello.HeartbeatInterval).ConfigureAwait(false);
@@ -156,10 +156,20 @@ namespace SlothCord
                 case OPCode.Dispatch:
                     {
 #if NETCORE
-                        var type = Enum.TryParse(typeof(DispatchType), data.EventName.Replace("_", ""), true, out object res);
+                        var okay = Enum.TryParse(typeof(DispatchType), data.EventName.Replace("_", ""), true, out object res);
+                        if (res == null)
+                        {
+                            this.UnknownEventReceived?.Invoke($"Unknown Dispatch Type: {(int)data.Code}", $"\n{data.EventPayload}").ConfigureAwait(false);
+                            break;
+                        }
                         await HandleDispatchEventAsync((DispatchType)res, data.EventPayload.ToString()).ConfigureAwait(false);
 #else
-                        var type = Enum.TryParse(data.EventName.Replace("_", "").ToLower(), out DispatchType res);
+                        var okay = Enum.TryParse(data.EventName.Replace("_", "").ToLower(), out DispatchType res);
+                        if (!okay)
+                        {
+                            this.UnknownEventReceived?.Invoke($"Unknown Dispatch Type: {(int)data.Code}", $"\n{data.EventPayload}").ConfigureAwait(false);
+                            break;
+                        }
                         await HandleDispatchEventAsync(res, data.EventPayload.ToString()).ConfigureAwait(false);
 #endif
                         break;
@@ -181,6 +191,7 @@ namespace SlothCord
                         var ready = JsonConvert.DeserializeObject<ReadyPayload>(payload);
                         _sessionId = ready.SessionId;
                         _guildsToDownload = ready.Guilds.Count();
+                        this.Ready?.Invoke().ConfigureAwait(false);
                         break;
                     }
                 case DispatchType.GuildCreate:
@@ -240,7 +251,7 @@ namespace SlothCord
                     }
                     default:
                     {
-                        this.UnknownEventReceived?.Invoke($"Unknown Dispatch Type: {(int)code}", payload).ConfigureAwait(false);
+                        this.UnknownEventReceived?.Invoke($"Unknown Dispatch Type: {(int)code}", $"\n{payload}").ConfigureAwait(false);
                         break;
                     }
             }
@@ -251,6 +262,7 @@ namespace SlothCord
 
     public partial class DiscordClient : ApiBase
     {
+        public event ReadyEvent Ready;
         public event HeartbeatedEvent Heartbeated;
         public event SocketOpenedEvent SocketOpened;
         public event SocketClosedEvent SocketClosed;
@@ -261,6 +273,8 @@ namespace SlothCord
         public event MemberAddedEvent MemberAdded;
         public event MemberRemovedEvent MemberRemoved;
         public event ResumedEvent GatewayResumed;
+
+        internal bool ContinueRequests = true;
 
         private List<DiscordGuild> _internalGuilds = new List<DiscordGuild>();
         private bool _heartbeat = true;
@@ -313,7 +327,7 @@ namespace SlothCord
         /// <summary>
         /// Gets the assembly version
         /// </summary>
-        public string Version { get => FileVersionInfo.GetVersionInfo(Assembly.GetCallingAssembly().Location).FileVersion; }
+        public string Version { get => FileVersionInfo.GetVersionInfo(Assembly.GetCallingAssembly().Location).ProductVersion; }
 
         /// <summary>
         /// Command service used for bot commands

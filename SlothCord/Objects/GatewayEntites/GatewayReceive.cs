@@ -25,7 +25,7 @@ namespace SlothCord.Objects
         public string EventName { get; set; }
         
         [JsonProperty("op")]
-        public CloseCode Code { get; set; }
+        public CloseCode? Code { get; set; }
 
         [JsonProperty("d")]
         public string Payload { get; set; }

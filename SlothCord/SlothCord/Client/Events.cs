@@ -8,6 +8,7 @@ namespace SlothCord
     public delegate Task SocketOpenedEvent();
     public delegate Task SocketClosedEvent(string reason);
     public delegate Task HeartbeatedEvent();
+    public delegate Task ReadyEvent();
     public delegate Task GuildsDownloadedEvent(IEnumerable<DiscordGuild> Guilds);
     public delegate Task GuildCreatedEvent(DiscordGuild guild);
     public delegate Task UnkownEvent(string message, string payload);

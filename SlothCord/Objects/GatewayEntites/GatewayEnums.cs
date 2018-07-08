@@ -31,7 +31,7 @@ namespace SlothCord.Objects
     public enum DispatchType
     {
         Ready = 0,
-        Presenceupdate = 1,
+        PresenceUpdate = 1,
         GuildCreate = 2,
         MessageCreate = 3,
         TypingStart = 4,
@@ -55,14 +55,13 @@ namespace SlothCord.Objects
         MessageUpdate = 22,
         MessageDelete = 23,
         BulkDelete = 24,
-        ReactionAdd = 25,
-        ReactionRemove = 26,
-        ReactionRemoveAll = 27,
-        UserUpdate = 28,
-        VoicStateUpdate = 29,
-        VoiceServerUpdate = 30,
-        WebhookUpdate = 31,
-        Resumed = 32
+        MessageReactionAdd = 25,
+        MessageReactionRemove = 26,
+        UserUpdate = 27,
+        VoicStateUpdate = 28,
+        VoiceServerUpdate = 29,
+        WebhookUpdate = 30,
+        Resumed = 31
     }
 
     public enum CloseCode

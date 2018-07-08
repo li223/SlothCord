@@ -4,6 +4,10 @@
     <TargetFrameworks>netcoreapp2.0;net47</TargetFrameworks>
     <DefineConstants Condition=" '$(TargetFramework)' == 'net47' ">NETFX47</DefineConstants>
     <DefineConstants Condition=" '$(TargetFramework)' != 'net47' ">NETCORE</DefineConstants>
+    <PackageProjectUrl></PackageProjectUrl>
+    <RepositoryUrl>https://www.github.com/li223/SlothCord</RepositoryUrl>
+    <AssemblyVersion>2.5.0.0</AssemblyVersion>
+    <FileVersion>3.5.0.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net47'">
