@@ -96,7 +96,7 @@ namespace SlothCord.Objects
         public bool IsLarge { get; private set; }
 
         [JsonProperty("voice_states")]
-        public IReadOnlyList<UserVoiceState> VoiceStates { get; private set; }
+        public IReadOnlyList<VoiceState?> VoiceStates { get; private set; }
 
         [JsonProperty("system_channel_id")]
         public ulong? DefaultChannelId { get; private set; }

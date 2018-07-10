@@ -2,7 +2,7 @@
 
 namespace SlothCord.Objects
 {
-    public struct UserVoiceState
+    public struct VoiceState
     {
         [JsonProperty("guild_id")]
         public ulong? GuildId { get; private set; }
@@ -12,15 +12,12 @@ namespace SlothCord.Objects
 
         [JsonProperty("channel_id")]
         public ulong ChannelId { get; private set; }
-
-        /// <summary>
-        /// Is either DiscordChannel for DiscordGuildChannel
-        /// </summary>
+        
         [JsonIgnore]
-        public object Channel { get; internal set; }
+        public DiscordGuildChannel Channel { get; internal set; }
 
         [JsonProperty("user_id")]
-        internal ulong UserId { get; set; }
+        public ulong UserId { get; set; }
 
         [JsonProperty("session_id")]
         internal string SessionId { get; set; }

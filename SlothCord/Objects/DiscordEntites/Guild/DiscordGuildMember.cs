@@ -58,7 +58,7 @@ namespace SlothCord.Objects
         public bool IsDeaf { get; private set; }
 
         [JsonProperty("nick")]
-        public string Nickname { get; private set; }
+        public string Nickname { get; internal set; }
 
         [JsonProperty("joined_at")]
         public DateTime JoinedAt { get; private set; }

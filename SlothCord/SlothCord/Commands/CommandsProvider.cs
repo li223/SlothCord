@@ -30,7 +30,7 @@ namespace SlothCord.Commands
                 Method = x,
                 MethodParams = x.GetParameters(),
                 CommandName = x.GetCustomAttribute<CommandAttribute>().CommandName,
-                Aliases = x.GetCustomAttribute<AliasesAttribute>().Aliases,
+                Aliases = x.GetCustomAttribute<AliasesAttribute>()?.Aliases,
                 ParentCommandName = null
             } as Command?));
 
@@ -46,7 +46,7 @@ namespace SlothCord.Commands
                     {
                         ClassInstance = groups[count],
                         Method = CommandsList[i].Value.Method,
-                        Aliases = CommandsList[i].Value.Method.GetCustomAttribute<AliasesAttribute>().Aliases,
+                        Aliases = CommandsList[i].Value.Method.GetCustomAttribute<AliasesAttribute>()?.Aliases,
                         CommandName = CommandsList[i].Value.Method.GetCustomAttribute<CommandAttribute>().CommandName,
                         ParentCommandName = groups[count].GetCustomAttribute<GroupAttribute>().GroupName
                     });

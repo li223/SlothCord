@@ -194,6 +194,21 @@ namespace SlothCord
                         this.Ready?.Invoke().ConfigureAwait(false);
                         break;
                     }
+                case DispatchType.PresenceUpdate:
+                    {
+                        var presence = JsonConvert.DeserializeObject<PresencePayload>(payload);
+                        var guild = this.Guilds.FirstOrDefault(x => x.Id == presence.GuildId);
+                        if(guild != null)
+                        {
+                            var member = guild.Members.FirstOrDefault(x => x.UserData.Id == presence.User.Id);
+                            member.RoleIds = presence.RoleIds;
+                            member.Nickname = presence.Nickname;
+                            member.UserData.Status = presence.Status;
+                            member.UserData.Activity = presence.Activity;
+                            this.PresenceUpdated?.Invoke(guild, member).ConfigureAwait(false);
+                        }
+                        break;
+                    }
                 case DispatchType.GuildCreate:
                     {
                         var guild = JsonConvert.DeserializeObject<DiscordGuild>(payload);
@@ -222,11 +237,11 @@ namespace SlothCord
                             var args = await CommandsProvider.ParseArguementsAsync(msg).ConfigureAwait(false);
                             Command? cmd;
                             bool sub = false;
-                            cmd = CommandsProvider.CommandsList.FirstOrDefault(x => (x?.CommandName == args[0]) || (x?.Aliases.FirstOrDefault(a => a == args[0]) != null));
+                            cmd = CommandsProvider.CommandsList.FirstOrDefault(x => (x?.CommandName == args[0]) || (x?.Aliases?.FirstOrDefault(a => a == args[0]) != null));
                             if (cmd == null)
                             {
-                                var group = CommandsProvider.GroupCommandsList.FirstOrDefault(x => (x?.GroupName == args[0]) || (x?.Aliases.FirstOrDefault(a => a == args[0]) != null));
-                                cmd = group?.SubCommands.FirstOrDefault(x => (x.CommandName == args[1]) || (x.Aliases.FirstOrDefault(a => a == args[1]) != null));
+                                var group = CommandsProvider.GroupCommandsList.FirstOrDefault(x => (x?.GroupName == args[0]) || (x?.Aliases?.FirstOrDefault(a => a == args[0]) != null));
+                                cmd = group?.SubCommands.FirstOrDefault(x => (x.CommandName == args[1]) || (x.Aliases?.FirstOrDefault(a => a == args[1]) != null));
                                 if (cmd == null && group.Value.ExecuteMethod != null)
                                     cmd = new Command()
                                     {
@@ -281,6 +296,7 @@ namespace SlothCord
         public event MemberAddedEvent MemberAdded;
         public event MemberRemovedEvent MemberRemoved;
         public event ResumedEvent GatewayResumed;
+        public event PresenceUpdateEvent PresenceUpdated;
 
         internal bool ContinueRequests = true;
 

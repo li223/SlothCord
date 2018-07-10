@@ -17,4 +17,5 @@ namespace SlothCord
     public delegate Task MemberRemovedEvent(DiscordGuild guild, DiscordUser user);
     public delegate Task CommandErroredEvent(Exception exception);
     public delegate Task ResumedEvent();
+    public delegate Task PresenceUpdateEvent(DiscordGuild guild, DiscordGuildMember member);
 }

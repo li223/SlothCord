@@ -95,9 +95,9 @@ namespace SlothCord.Objects
     public struct ActivityTimestamps
     {
         [JsonProperty("start")]
-        public DateTimeOffset? Start { get; private set; }
+        public ulong? Start { get; private set; }
 
         [JsonProperty("end")]
-        public DateTimeOffset? End { get; private set; }
+        public ulong? End { get; private set; }
     }
 }

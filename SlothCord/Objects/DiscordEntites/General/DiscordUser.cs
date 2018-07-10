@@ -40,7 +40,7 @@ namespace SlothCord.Objects
         public StatusType Status { get; internal set; }
 
         [JsonProperty("game")]
-        public DiscordActivity Activity { get; internal set; }
+        public DiscordActivity? Activity { get; internal set; }
 
         [JsonProperty("verified")]
         public bool Verified { get; private set; }
