@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using WebSocket4Net;
 
@@ -39,12 +40,15 @@ namespace SlothCord
         }
 
 #pragma warning disable CS1998
-        private async void WebSocketClient_Closed(object sender, EventArgs e)
+        private async void WebSocketClient_Closed(object sender, object e)
         {
+            if(FailedReconnects == 5) throw new Exception("Failed to re-establish the connection, abandoning attempts");
+            var data = e as ClosedEventArgs;
+            FailedReconnects++;
             _heartbeat = false;
-            var data = JsonConvert.DeserializeObject<GatewayClose>(e.ToString());
-            this.SocketClosed?.Invoke($"Received Close Code: {data.Code}").ConfigureAwait(false);
-            if(data.Code == CloseCode.GracefulClose)
+            if(!CancellationToken.IsCancellationRequested) CancellationToken.Cancel();
+            this.SocketClosed?.Invoke($"Received Close Code: {data?.Code.ToString() ?? "No code"}").ConfigureAwait(false);
+            if (data?.Code == 1000)
             {
                 _sessionId = "";
                 _sequence = null;
@@ -52,15 +56,51 @@ namespace SlothCord
             else
             {
 #if NETCORE
-                await WebSocketClient.OpenAsync().ConfigureAwait(false);
+                switch (WebSocketClient.State)
+                {
+                    case WebSocketState.Connecting:
+                        await Task.Delay(500).ConfigureAwait(false);
+                        await SendResumeAsync().ConfigureAwait(false);
+                        await WebSocketClient.OpenAsync().ConfigureAwait(false);
+                        break;
+                    case WebSocketState.Closed:
+                        await WebSocketClient.CloseAsync().ConfigureAwait(false);
+                        await Task.Delay(500).ConfigureAwait(false);
+                        await WebSocketClient.OpenAsync().ConfigureAwait(false);
+                        break;
+                    case WebSocketState.Open:
+                        await WebSocketClient.CloseAsync().ConfigureAwait(false);
+                        await Task.Delay(500).ConfigureAwait(false);
+                        await WebSocketClient.OpenAsync().ConfigureAwait(false);
+                        break;
+                }
 #else
-                WebSocketClient.Open();
+                switch (WebSocketClient.State)
+                {
+                    case WebSocketState.Closed:
+                        WebSocketClient.Open();
+                        break;
+                    case WebSocketState.Connecting:
+                        WebSocketClient.Close();
+                        await Task.Delay(500).ConfigureAwait(false);
+                        WebSocketClient.Open();
+                        break;
+                    case WebSocketState.Open:
+                        WebSocketClient.Close();
+                        await Task.Delay(500).ConfigureAwait(false);
+                        WebSocketClient.Open();
+                        break;
+                }
 #endif
             }
         }
 #pragma warning restore CS1998
 
-        private void WebSocketClient_Opened(object sender, EventArgs e) => this.SocketOpened?.Invoke().ConfigureAwait(false);
+        private void WebSocketClient_Opened(object sender, EventArgs e)
+        {
+            if(CancellationToken.IsCancellationRequested) CancellationToken = new CancellationTokenSource();
+            this.SocketOpened?.Invoke().ConfigureAwait(false);
+        }
 
         private Task SendResumeAsync()
         {
@@ -108,11 +148,17 @@ namespace SlothCord
             while (_heartbeat)
             {
                 await Task.Delay(inter).ConfigureAwait(false);
-                if (WebSocketClient.State == WebSocketState.Open) WebSocketClient.Send(@"{""op"":1, ""t"":null,""d"":null,""s"":null}");
+                if (WebSocketClient.State == WebSocketState.Open)
+                {
+                    PingStopwatch.Reset();
+                    PingStopwatch.Start();
+                    WebSocketClient.Send(@"{""op"":1, ""t"":null,""d"":null,""s"":null}");
+                }
                 else break;
             }
         }
 
+#pragma warning disable CS4014
         private async void WebSocketClient_MessageReceived(object sender, MessageReceivedEventArgs e)
         {
             var data = JsonConvert.DeserializeObject<GatewayEvent>(e.Message);
@@ -125,7 +171,7 @@ namespace SlothCord
                         if (string.IsNullOrWhiteSpace(_sessionId))
                         {
                             await SendIdentifyAsync().ConfigureAwait(false);
-                            await HeartbeatLoop(hello.HeartbeatInterval).ConfigureAwait(false);
+                            Task.Run(async() => await HeartbeatLoop(hello.HeartbeatInterval)).ConfigureAwait(false);
                             this._heartbeatInterval = hello.HeartbeatInterval;
                         }
                         else await SendResumeAsync().ConfigureAwait(false);
@@ -150,6 +196,8 @@ namespace SlothCord
                     }
                 case OPCode.HeartbeatAck:
                     {
+                        Ping = this.PingStopwatch.ElapsedMilliseconds;
+                        this.PingStopwatch.Stop();
                         this.Heartbeated?.Invoke().ConfigureAwait(false);
                         break;
                     }
@@ -181,6 +229,7 @@ namespace SlothCord
                     }
             }
         }
+#pragma warning restore CS4014
 
         private async Task HandleDispatchEventAsync(DispatchType code, string payload)
         {
@@ -192,6 +241,16 @@ namespace SlothCord
                         _sessionId = ready.SessionId;
                         _guildsToDownload = ready.Guilds.Count();
                         this.Ready?.Invoke().ConfigureAwait(false);
+                        break;
+                    }
+                case DispatchType.TypingStart:
+                    {
+                        var typing = JsonConvert.DeserializeObject<TypingStartPayload>(payload);
+                        var guild = this.Guilds.FirstOrDefault(x => x.Id == (typing.GuildId ?? 0));
+                        object channel;
+                        if (guild != null) channel = guild.Channels.FirstOrDefault(x => x.Id == typing.ChannelId);
+                        else channel = this.PrivateChannels.FirstOrDefault(x => x.Id == typing.ChannelId);
+                        this.TypingStart?.Invoke(typing.UserId, channel).ConfigureAwait(false);
                         break;
                     }
                 case DispatchType.PresenceUpdate:
@@ -281,8 +340,6 @@ namespace SlothCord
         }
     }
 
-
-
     public partial class DiscordClient : ApiBase
     {
         public event ReadyEvent Ready;
@@ -297,8 +354,7 @@ namespace SlothCord
         public event MemberRemovedEvent MemberRemoved;
         public event ResumedEvent GatewayResumed;
         public event PresenceUpdateEvent PresenceUpdated;
-
-        internal bool ContinueRequests = true;
+        public event TypingStartEvent TypingStart;
 
         private List<DiscordGuild> _internalGuilds = new List<DiscordGuild>();
         private bool _heartbeat = true;
@@ -307,6 +363,13 @@ namespace SlothCord
         private int? _sequence = null;
         private int _guildsToDownload = 0;
         private int _downloadedGuilds = 0;
+        private Stopwatch PingStopwatch = new Stopwatch();
+        private int FailedReconnects = -1;
+
+        /// <summary>
+        /// Heartbeat response time in ms
+        /// </summary>
+        public long Ping { get; private set; }
 
         /// <summary>
         /// Your bot token
@@ -375,7 +438,7 @@ namespace SlothCord
         public async Task<DiscordUser> GetUserAsync(ulong user_id)
         {
             var msg = new HttpRequestMessage(HttpMethod.Get, new Uri($"{_baseAddress}/users/{user_id}"));
-            var response = await _httpClient.SendAsync(msg).ConfigureAwait(false);
+            var response = await _httpClient.SendRequestAsync(msg, RequestType.Other, CancellationToken).ConfigureAwait(false);
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.IsSuccessStatusCode)
             {
@@ -393,7 +456,7 @@ namespace SlothCord
         public async Task<DiscordGuild> GetGuildAsync(ulong guild_id)
         {
             var msg = new HttpRequestMessage(HttpMethod.Get, new Uri($"{_baseAddress}/@me/guilds/{guild_id}"));
-            var response = await _httpClient.SendAsync(msg).ConfigureAwait(false);
+            var response = await _httpClient.SendRequestAsync(msg, RequestType.Other, CancellationToken).ConfigureAwait(false);
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.IsSuccessStatusCode)
                 return JsonConvert.DeserializeObject<DiscordGuild>(content);
@@ -408,7 +471,7 @@ namespace SlothCord
         public async Task<IEnumerable<DiscordChannel>> GetPrivateChannelsAsync()
         {
             var msg = new HttpRequestMessage(HttpMethod.Get, new Uri($"{_baseAddress}/users/@me/channels"));
-            var response = await _httpClient.SendAsync(msg).ConfigureAwait(false);
+            var response = await _httpClient.SendRequestAsync(msg, RequestType.Other, CancellationToken).ConfigureAwait(false);
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.IsSuccessStatusCode)
                 return JsonConvert.DeserializeObject<IEnumerable<DiscordChannel>>(content);

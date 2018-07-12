@@ -18,4 +18,5 @@ namespace SlothCord
     public delegate Task CommandErroredEvent(Exception exception);
     public delegate Task ResumedEvent();
     public delegate Task PresenceUpdateEvent(DiscordGuild guild, DiscordGuildMember member);
+    public delegate Task TypingStartEvent(ulong userid, object channel);
 }

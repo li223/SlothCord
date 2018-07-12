@@ -44,7 +44,7 @@ namespace SlothCord.Objects
         public ChannelType Type { get; private set; }
 
         [JsonProperty("last_message_id")]
-        public ulong LastMessageId { get; private set; }
+        public ulong? LastMessageId { get; private set; }
 
         [JsonProperty("icon")]
         public string Icon { get; private set; }

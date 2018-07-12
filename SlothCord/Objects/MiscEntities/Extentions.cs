@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SlothCord.Objects
@@ -76,27 +77,33 @@ namespace SlothCord.Objects
             }
         };
 
-        public static async Task<HttpResponseMessage> SendRequestAsync(this HttpClient http, HttpRequestMessage msg, RequestType type)
+        public static async Task<HttpResponseMessage> SendRequestAsync(this HttpClient http, HttpRequestMessage msg, RequestType type, CancellationTokenSource cancellationToken)
         {
-            HttpResponseMessage httpResponse = null;
-            var obj = RateLimits.FirstOrDefault(x => x.RequestType == type);
-            var timediff = DateTimeOffset.Now - obj.LastRequestStamp;
-            if (timediff.Milliseconds > obj.Time)
+            if (!cancellationToken.IsCancellationRequested)
             {
-                obj.LastRequestStamp = DateTime.Now;
-                obj.CurrentLimit = obj.InitalLimit;
+                HttpResponseMessage httpResponse = null;
+                var obj = RateLimits.FirstOrDefault(x => x.RequestType == type);
+                RateLimits.Remove(obj);
+                var timediff = DateTimeOffset.Now - obj.LastRequestStamp;
+                if (timediff.Milliseconds > obj.Time)
+                {
+                    obj.LastRequestStamp = DateTime.Now;
+                    obj.CurrentLimit = obj.InitalLimit;
+                }
+                if (obj.CurrentLimit <= -1 && timediff.Milliseconds <= obj.Time)
+                    httpResponse = await InternalWaitAsync(http, obj.Time, msg).ConfigureAwait(false);
+                else
+                {
+                    obj.CurrentLimit -= 1;
+                    httpResponse = await http.SendAsync(msg).ConfigureAwait(false);
+                }
+                RateLimits.Add(obj);
+                return httpResponse;
             }
-            if (obj.CurrentLimit <= -1 && timediff.Milliseconds <= obj.Time)
-                httpResponse = await InternalWaitAsync(http, obj.Time, msg).ConfigureAwait(false);
-            else
-            {
-                obj.CurrentLimit -= 1;
-                httpResponse = await http.SendAsync(msg).ConfigureAwait(false);
-            }
-            return httpResponse;
+            else return null;
         }
 
-        static async Task<HttpResponseMessage> InternalWaitAsync(HttpClient client, int retry_in, HttpRequestMessage msg)
+        private static async Task<HttpResponseMessage> InternalWaitAsync(HttpClient client, int retry_in, HttpRequestMessage msg)
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine($"[{DateTime.Now.ToShortTimeString()}] ->  Internal Ratelimit Reached, waiting {retry_in}ms");
@@ -107,7 +114,7 @@ namespace SlothCord.Objects
         }
     }
 
-    public struct RateLimitObject
+    internal struct RateLimitObject
     {
         public int InitalLimit { get; set; }
         public int CurrentLimit { get; set; }

@@ -19,7 +19,7 @@ namespace SlothCord.Objects
         public object EventPayload { get; set; }
     }
 
-    internal struct GatewayClose
+    internal class GatewayClose
     {
         [JsonProperty("t", NullValueHandling = NullValueHandling.Ignore)]
         public string EventName { get; set; }
@@ -29,6 +29,15 @@ namespace SlothCord.Objects
 
         [JsonProperty("d")]
         public string Payload { get; set; }
+    }
+
+    internal struct EventClose
+    {
+        [JsonProperty("code")]
+        public CloseCode Code { get; set; }
+
+        [JsonProperty("reason")]
+        public string Reason { get; set; }
     }
 
     internal struct ReadyPayload
@@ -120,7 +129,7 @@ namespace SlothCord.Objects
         public ulong GuildId { get; set; }
 
         [JsonProperty("game")]
-        public DiscordActivity Activity { get; set; }
+        public DiscordActivity? Activity { get; set; }
     }
 
     internal struct MemberRemovedPayload
@@ -138,10 +147,16 @@ namespace SlothCord.Objects
         public ulong UserId { get; set; }
 
         [JsonProperty("timestamp")]
-        public DateTimeOffset Timestamp { get; set; }
+        public ulong Timestamp { get; set; }
 
         [JsonProperty("channel_id")]
         public ulong ChannelId { get; set; }
+
+        [JsonProperty("guild_id")]
+        public ulong? GuildId { get; set; }
+
+        [JsonProperty("member")]
+        public DiscordGuildMember Member { get; set; }
     }
     
     internal struct GatewayHello

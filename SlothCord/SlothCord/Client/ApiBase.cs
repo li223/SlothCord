@@ -5,11 +5,14 @@ using System.Net.Http;
 using WebSocket4Net;
 using System.Threading.Tasks;
 using SlothCord.Objects;
+using System.Threading;
 
 namespace SlothCord
 {
     public class ApiBase
     {
+        protected internal static CancellationTokenSource CancellationToken = new CancellationTokenSource();
+
         protected internal static HttpClient _httpClient = new HttpClient();
 
         protected internal static WebSocket WebSocketClient { get; set; }
