@@ -10,4 +10,4 @@ Note: The master branch is fucntional (mostly) but the library is being rewritte
 # What if I have a burning question?
 You can try to find me on Discord: li223#5153
 
-[logo]:(https://cdn.discordapp.com/attachments/409127814101467149/466753833339715584/unknown.png)
+[logo]: https://cdn.discordapp.com/attachments/409127814101467149/466753833339715584/unknown.png
