@@ -290,7 +290,7 @@ namespace SlothCord
                         foreach(var member in guild.Members)
                         {
                             member.Guild = guild;
-                            member.Roles = guild.Roles.Where(x => member.RoleIds.Any(a => a == x.Value.Id)) as IReadOnlyList<DiscordGuildRole?>;
+                            member.Roles = guild.Roles.Where(x => member.RoleIds.Any(a => a == x?.Id)) as IReadOnlyList<DiscordGuildRole?>;
                         }
                         this.GuildCreated?.Invoke(guild).ConfigureAwait(false);
                         if (this._guildsToDownload == this._downloadedGuilds)
@@ -315,11 +315,11 @@ namespace SlothCord
                             {
                                 var group = CommandsProvider.GroupCommandsList.FirstOrDefault(x => (x?.GroupName == args[0]) || (x?.Aliases?.FirstOrDefault(a => a == args[0]) != null));
                                 cmd = group?.SubCommands.FirstOrDefault(x => (x.CommandName == args[1]) || (x.Aliases?.FirstOrDefault(a => a == args[1]) != null));
-                                if (cmd == null && group.Value.ExecuteMethod != null)
+                                if (cmd == null && group?.ExecuteMethod != null)
                                     cmd = new Command()
                                     {
-                                        Method = group.Value.ExecuteMethod,
-                                        MethodParams = group.Value.ExecuteMethod.GetParameters()
+                                        Method = group?.ExecuteMethod,
+                                        MethodParams = group?.ExecuteMethod.GetParameters()
                                     };
                                 else if (cmd != null) sub = true;
                                 else break;
