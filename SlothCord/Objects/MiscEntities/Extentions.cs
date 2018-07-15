@@ -91,7 +91,10 @@ namespace SlothCord.Objects
                     obj.CurrentLimit = obj.InitalLimit;
                 }
                 if (obj.CurrentLimit <= -1 && timediff.Milliseconds <= obj.Time)
+                {
                     httpResponse = await InternalWaitAsync(http, obj.Time, msg).ConfigureAwait(false);
+                    obj.CurrentLimit = obj.InitalLimit;
+                }
                 else
                 {
                     obj.CurrentLimit -= 1;

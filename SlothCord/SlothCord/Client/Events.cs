@@ -15,8 +15,13 @@ namespace SlothCord
     public delegate Task MessageCreatedEvent(DiscordMessage message);
     public delegate Task MemberAddedEvent(DiscordGuild guild, DiscordGuildMember member);
     public delegate Task MemberRemovedEvent(DiscordGuild guild, DiscordUser user);
+    public delegate Task MemberUpdatedEvent(DiscordGuildMember member);
     public delegate Task CommandErroredEvent(Exception exception);
     public delegate Task ResumedEvent();
     public delegate Task PresenceUpdateEvent(DiscordGuild guild, DiscordGuildMember member);
     public delegate Task TypingStartEvent(ulong userid, object channel);
+
+    public delegate Task ChannelUpdateEvent(DiscordGuildChannel channel);
+    public delegate Task ChannelDeleteEvent(DiscordChannel channel);
+    public delegate Task ChannelAddEvent(DiscordGuildChannel channel);
 }

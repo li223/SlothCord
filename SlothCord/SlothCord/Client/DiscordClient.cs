@@ -203,14 +203,16 @@ namespace SlothCord
                     }
                 case OPCode.Dispatch:
                     {
-#if NETCORE
-                        var okay = Enum.TryParse(typeof(DispatchType), data.EventName.Replace("_", ""), true, out object res);
-                        if (res == null)
+                        try
                         {
-                            this.UnknownEventReceived?.Invoke($"Unknown Dispatch Type: {(int)data.Code}", $"\n{data.EventPayload}").ConfigureAwait(false);
-                            break;
-                        }
-                        await HandleDispatchEventAsync((DispatchType)res, data.EventPayload.ToString()).ConfigureAwait(false);
+#if NETCORE
+                            var okay = Enum.TryParse(typeof(DispatchType), data.EventName?.Replace("_", ""), true, out object res);
+                            if (res == null || !okay)
+                            {
+                                this.UnknownEventReceived?.Invoke($"Unknown Dispatch Type: {(int)data.Code}", $"\n{data.EventPayload}").ConfigureAwait(false);
+                                break;
+                            }
+                            await HandleDispatchEventAsync((DispatchType)res, data.EventPayload.ToString()).ConfigureAwait(false);
 #else
                         var okay = Enum.TryParse(data.EventName.Replace("_", "").ToLower(), out DispatchType res);
                         if (!okay)
@@ -220,6 +222,11 @@ namespace SlothCord
                         }
                         await HandleDispatchEventAsync(res, data.EventPayload.ToString()).ConfigureAwait(false);
 #endif
+                        }
+                        catch(Exception ex)
+                        {
+                            Console.WriteLine(ex.Message + @"\r\n\r\n" + ex.StackTrace);
+                        }
                         break;
                     }
                 default:
@@ -243,6 +250,13 @@ namespace SlothCord
                         this.Ready?.Invoke().ConfigureAwait(false);
                         break;
                     }
+                case DispatchType.GuildMemberUpdate:
+                    {
+                        var member = JsonConvert.DeserializeObject<DiscordGuildMember>(payload);
+                        member = this.Guilds.First(x => x.Id == member.GuildId).Members.FirstOrDefault(x => x.UserData.Id == member.UserData.Id);
+                        this.MemberUpdated?.Invoke(member).ConfigureAwait(false);
+                        break;
+                    }
                 case DispatchType.TypingStart:
                     {
                         var typing = JsonConvert.DeserializeObject<TypingStartPayload>(payload);
@@ -250,7 +264,7 @@ namespace SlothCord
                         object channel;
                         if (guild != null) channel = guild.Channels.FirstOrDefault(x => x.Id == typing.ChannelId);
                         else channel = this.PrivateChannels.FirstOrDefault(x => x.Id == typing.ChannelId);
-                        this.TypingStart?.Invoke(typing.UserId, channel).ConfigureAwait(false);
+                        this.TypingStarted?.Invoke(typing.UserId, channel).ConfigureAwait(false);
                         break;
                     }
                 case DispatchType.PresenceUpdate:
@@ -354,7 +368,8 @@ namespace SlothCord
         public event MemberRemovedEvent MemberRemoved;
         public event ResumedEvent GatewayResumed;
         public event PresenceUpdateEvent PresenceUpdated;
-        public event TypingStartEvent TypingStart;
+        public event TypingStartEvent TypingStarted;
+        public event MemberUpdatedEvent MemberUpdated;
 
         private List<DiscordGuild> _internalGuilds = new List<DiscordGuild>();
         private bool _heartbeat = true;
